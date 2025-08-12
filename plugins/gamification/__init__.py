@@ -1,7 +1,13 @@
 from fastapi import APIRouter
-from core.plugin_loader import PluginBase  # if plugin_loader.py is inside core/
-# OR
-from plugin_loader import PluginBase       # if plugin_loader.py is in project root and app root is a package
+import sys
+import os
+
+
+# Add the project root directory (adjust path as needed)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'app')))
+print("PYTHONPATH inside plugin:", sys.path)
+
+from core.plugin_loader import PluginBase
 
 router = APIRouter(prefix="/gamification")
 
