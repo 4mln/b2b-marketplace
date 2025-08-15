@@ -22,10 +22,18 @@ class PluginBase:
     async def shutdown(self):
         pass
 
+
 # Absolute path to your root-level 'plugins' folder
 PLUGIN_FOLDER_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "plugins")
 )
+
+# === New: control which plugins are active ===
+ACTIVE_PLUGINS = {
+    "gamification": True,
+    "test_connections": True,  # Set False in production
+}
+
 
 def discover_plugins(plugin_folder: str = PLUGIN_FOLDER_PATH) -> List[PluginBase]:
     """
@@ -34,7 +42,6 @@ def discover_plugins(plugin_folder: str = PLUGIN_FOLDER_PATH) -> List[PluginBase
     """
     plugins = []
 
-    # Ensure the plugin_folder exists
     if not os.path.isdir(plugin_folder):
         print(f"Plugin folder not found: {plugin_folder}")
         return plugins
@@ -43,7 +50,11 @@ def discover_plugins(plugin_folder: str = PLUGIN_FOLDER_PATH) -> List[PluginBase
         if not ispkg:
             continue
 
-        # Import path: since plugins folder is root-level, import as 'plugins.{name}'
+        # Skip plugins marked as inactive
+        if not ACTIVE_PLUGINS.get(name, True):
+            print(f"Plugin {name} is disabled, skipping")
+            continue
+
         module_name = f"plugins.{name}"
         try:
             module = importlib.import_module(module_name)
@@ -51,13 +62,14 @@ def discover_plugins(plugin_folder: str = PLUGIN_FOLDER_PATH) -> List[PluginBase
             if plugin_class:
                 plugin_instance = plugin_class()
                 plugins.append(plugin_instance)
-                print(f"Loaded plugin: {name}")
+                print(f"✅ Loaded plugin: {name}")
             else:
                 print(f"No Plugin class found in {module_name}")
         except Exception as e:
-            print(f"Error loading plugin {name}: {e}")
+            print(f"⚠️ Error loading plugin {name}: {e}")
 
     return plugins
+
 
 async def load_plugins(app: FastAPI, engine: AsyncEngine):
     """
