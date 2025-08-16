@@ -1,16 +1,15 @@
-# plugins/gamification/__init__.py
+# plugins/seller/__init__.py
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 from app.core.plugin_loader import PluginBase
 
 class Plugin(PluginBase):
-    """Gamification plugin"""
+    """Seller plugin"""
 
     def register_routes(self, app: FastAPI):
-        # If you have routes, include them here
-        print("🔌 Gamification plugin routes registered")
+        print("🔌 Seller plugin routes registered")
         pass
 
     async def init_db(self, engine: AsyncEngine):
         if engine:
-            print("🗄 Gamification plugin DB initialized with engine")
+            print("🗄 Seller plugin DB initialized with engine")

@@ -1,6 +1,9 @@
+import asyncio
 import importlib
 import os
 import pkgutil
+
+
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 from typing import List
@@ -59,13 +62,41 @@ def discover_plugins(plugin_folder: str = PLUGIN_FOLDER_PATH) -> List[PluginBase
 
     return plugins
 
-async def load_plugins(app: FastAPI, engine: AsyncEngine):
+async def load_plugins(app: FastAPI, engine: AsyncEngine) -> list:
     """
-    Load all plugins, register their routes, and initialize DB.
+    Load all plugins: register routes and initialize DB.
+    Supports:
+    - Plugin class with `register_routes(app)` (sync)
+    - Plugin class with async `register(app, engine)`
+    - Module-level async `register(app, engine)` function
     """
     plugins = discover_plugins()
     for plugin in plugins:
-        plugin.register_routes(app)
-        await plugin.init_db(engine)
+        # Case 1: Plugin class with sync register_routes
+        if hasattr(plugin, "register_routes"):
+            plugin.register_routes(app)
+            print(f"🔌 Plugin {plugin.__class__.__name__} registered with register_routes")
+
+        # Case 2: Plugin class with async register method
+        elif hasattr(plugin, "register") and callable(getattr(plugin, "register")):
+            method = getattr(plugin, "register")
+            if asyncio.iscoroutinefunction(method):
+                await method(app, engine)
+            else:
+                method(app, engine)
+            print(f"🔌 Plugin {plugin.__class__.__name__} registered with async register")
+
+        # Case 3: Module-level async `register` function
+        elif hasattr(plugin, "register") and asyncio.iscoroutinefunction(plugin.register):
+            await plugin.register(app, engine)
+            print(f"🔌 Plugin {plugin.__name__} module-level register called")
+
+        else:
+            print(f"⚠️ Plugin {plugin.__class__.__name__} has no register function")
+
+        # Initialize DB if defined
+        if hasattr(plugin, "init_db") and asyncio.iscoroutinefunction(plugin.init_db):
+            await plugin.init_db(engine)
+            print(f"💾 Plugin {plugin.__class__.__name__} DB initialized")
 
     return plugins

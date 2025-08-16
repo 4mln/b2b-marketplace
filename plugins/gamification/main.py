@@ -9,7 +9,7 @@ class Plugin:
         async def get_badges():
             return {"badges": ["top-seller", "fast-responder", "verified"]}
 
-    def register_routes(self, app: FastAPI):
+    def register(self, app: FastAPI):
         app.include_router(self.router, prefix="/gamification", tags=["gamification"])
 
     async def init_db(self, engine: AsyncEngine):
