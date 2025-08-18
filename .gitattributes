@@ -1,0 +1,35 @@
+# Python files
+*.py text eol=lf
+*.pyi text eol=lf
+
+# Alembic migration files
+alembic.ini text eol=lf
+alembic/*.py text eol=lf
+alembic/*.mako text eol=lf
+
+# JSON, YAML, TOML, and ENV files
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.env text eol=lf
+
+# Markdown and text documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Docker files
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+
+# Ignore line ending conversion for binaries
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.ttf binary
+*.otf binary
