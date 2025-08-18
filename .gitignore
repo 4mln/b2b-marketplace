@@ -17,10 +17,15 @@ venv/
 # Database files
 *.sqlite3
 
-# Docker files
+# Docker / environment
 *.env
 
-# Other
+# Testing / type checking
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+
+# Packaging
 *.egg-info/
 dist/
 build/
