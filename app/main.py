@@ -1,18 +1,18 @@
 # app/main.py
 import asyncio
-from app.core import rabbitmq
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
+from app.core import rabbitmq
 from app.core.config import settings
 from app.core.db import engine
 from app.core.plugins import load_plugins
-from app.core.connections import get_redis, get_rabbitmq_connection
+from app.core.connections import get_redis
+
+# Only include connection routes manually
 from app.api.routes.connections import router as connections_router
-from plugins.seller.routes import router as seller_router
 
 app = FastAPI(title="B2B Marketplace API")
 app.include_router(connections_router)
-app.include_router(seller_router)
 
 @app.get("/")
 async def root():
@@ -36,23 +36,30 @@ async def startup_event():
     except Exception as e:
         print(f"❌ RabbitMQ connection failed: {e}")
 
-    # Initialize plugins (register routes + init DB)
-    await load_plugins(app, engine)
-    print("🔌 Plugins loaded")
+    # Load all plugins (routes + DB)
+    loaded_plugins = await load_plugins(app, engine)
+    print("🔌 Plugins loaded:", [p.__class__.__name__ for p in loaded_plugins])
+
+    # Optional: Print all registered routes
+    print("📌 Registered routes:")
+    for route in app.routes:
+        print(f"  {route.path} -> {route.name}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     # Close Redis
-    try:
-        await rabbitmq.stop_rabbit()
-    except Exception:
-        pass
+    if hasattr(app.state, "redis") and app.state.redis:
+        try:
+            await app.state.redis.close()
+            print("🛑 Redis disconnected")
+        except Exception:
+            pass
 
     # Close RabbitMQ
-    try:
-        if hasattr(app.state, "rmq") and app.state.rmq:
-            await app.state.rmq.close()
+    if hasattr(app.state, "rmq_conn") and app.state.rmq_conn:
+        try:
+            await app.state.rmq_conn.close()
             print("🛑 RabbitMQ disconnected")
-    except Exception:
-        pass
+        except Exception:
+            pass

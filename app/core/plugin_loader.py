@@ -2,13 +2,11 @@
 import importlib
 import os
 import pkgutil
-import asyncio
-
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 from typing import List, Union
 
-# Base class for plugins (optional)
+# Base class for plugins
 class PluginBase:
     def register_routes(self, app: FastAPI):
         raise NotImplementedError
@@ -19,13 +17,12 @@ class PluginBase:
     async def shutdown(self):
         pass
 
-
-# Absolute path to the 'plugins' folder
+# Path to 'plugins' folder
 PLUGIN_FOLDER_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "plugins")
 )
 
-# Active plugins control
+# Which plugins are active
 ACTIVE_PLUGINS = {
     "gamification": True,
     "seller": True,
@@ -34,67 +31,56 @@ ACTIVE_PLUGINS = {
     "auth": True,
 }
 
-def discover_plugins(plugin_folder: str = PLUGIN_FOLDER_PATH) -> List[Union[PluginBase, callable]]:
-    """
-    Discover all plugins in the 'plugins' folder.
-    Can be class-based (Plugin) or async function (register).
-    """
+def discover_plugins(plugin_folder: str = PLUGIN_FOLDER_PATH) -> List[PluginBase]:
+    """Discover all class-based plugins in the plugins folder."""
     plugins = []
 
+    print(f"🔍 Discovering plugins in: {plugin_folder}")
     if not os.path.isdir(plugin_folder):
-        print(f"Plugin folder not found: {plugin_folder}")
+        print(f"❌ Plugin folder not found: {plugin_folder}")
         return plugins
 
     for finder, name, ispkg in pkgutil.iter_modules([plugin_folder]):
-        if not ispkg or not ACTIVE_PLUGINS.get(name, True):
+        print(f"Found module: {name} (is package: {ispkg})")
+        if not ispkg:
+            continue
+        if not ACTIVE_PLUGINS.get(name, True):
+            print(f"⚠️ Plugin {name} is disabled in ACTIVE_PLUGINS")
             continue
 
         module_name = f"plugins.{name}"
         try:
             module = importlib.import_module(module_name)
-
-            # First, look for class-based Plugin
             plugin_class = getattr(module, "Plugin", None)
             if plugin_class:
                 plugin_instance = plugin_class()
                 plugins.append(plugin_instance)
-                print(f"✅ Loaded class-based plugin: {name}")
-                continue
-
-            # Fallback: look for async register function
-            register_func = getattr(module, "register", None)
-            if register_func:
-                plugins.append(register_func)
-                print(f"✅ Loaded function-based plugin: {name}")
-                continue
-
-            print(f"⚠️ No Plugin class or register function found in {name}")
+                print(f"✅ Loaded plugin: {name}")
+            else:
+                print(f"⚠️ No Plugin class found in {name}")
         except Exception as e:
-            print(f"⚠️ Error loading plugin {name}: {e}")
+            print(f"❌ Error loading plugin {name}: {e}")
 
+    print(f"📌 Total plugins discovered: {[p.__class__.__name__ for p in plugins]}")
     return plugins
 
 
-async def load_plugins(app: FastAPI, engine: AsyncEngine):
-    """
-    Load all plugins: register routes and init DB.
-    Supports both class-based and function-based plugins.
-    """
+async def load_plugins(app: FastAPI, engine: AsyncEngine) -> List[PluginBase]:
+    """Register routes and initialize DB for discovered plugins."""
     plugins = discover_plugins()
     for plugin in plugins:
-        # Class-based plugin
-        if hasattr(plugin, "register_routes"):
+        try:
             plugin.register_routes(app)
-            print(f"🔌 Plugin {plugin.__class__.__name__} registered with register_routes")
+            print(f"🔌 Routes registered for plugin: {plugin.__class__.__name__}")
+        except Exception as e:
+            print(f"❌ Failed to register routes for {plugin.__class__.__name__}: {e}")
 
-        # Function-based plugin
-        elif callable(plugin):
-            await plugin(app, engine)
-            print(f"🔌 Function plugin {plugin.__name__} executed")
-
-        # Init DB if available
         if hasattr(plugin, "init_db"):
-            await plugin.init_db(engine)
-            print(f"💾 Plugin {plugin.__class__.__name__} DB initialized")
+            try:
+                await plugin.init_db(engine)
+                print(f"💾 DB initialized for plugin: {plugin.__class__.__name__}")
+            except Exception as e:
+                print(f"❌ DB init failed for {plugin.__class__.__name__}: {e}")
 
+    print(f"📌 Total plugins loaded: {[p.__class__.__name__ for p in plugins]}")
     return plugins
