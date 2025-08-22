@@ -1,18 +1,17 @@
-# app/main.py
 import asyncio
 from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import AsyncEngine
 from app.core import rabbitmq
 from app.core.config import settings
 from app.core.db import engine
-from app.core.plugins import load_plugins
+from app.core.plugin_loader import load_plugins
 from app.core.connections import get_redis
-
-# Only include connection routes manually
 from app.api.routes.connections import router as connections_router
 
 app = FastAPI(title="B2B Marketplace API")
+
+# Include static routers
 app.include_router(connections_router)
+
 
 @app.get("/")
 async def root():
@@ -37,8 +36,11 @@ async def startup_event():
         print(f"❌ RabbitMQ connection failed: {e}")
 
     # Load all plugins (routes + DB)
-    loaded_plugins = await load_plugins(app, engine)
-    print("🔌 Plugins loaded:", [p.__class__.__name__ for p in loaded_plugins])
+    try:
+        loaded_plugins = await load_plugins(app, engine)
+        print("🔌 Plugins loaded:", [p.__class__.__name__ for p in loaded_plugins])
+    except Exception as e:
+        print(f"❌ Error loading plugins: {e}")
 
     # Optional: Print all registered routes
     print("📌 Registered routes:")

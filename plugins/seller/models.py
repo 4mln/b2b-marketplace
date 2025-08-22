@@ -1,23 +1,14 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, ForeignKey
-from sqlalchemy.sql import func
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy import Enum as SAEnum
 from app.db.base import Base
-from plugins.seller.schemas import SubscriptionType  # 🔗 reuse same Enum
 
 class Seller(Base):
     __tablename__ = "sellers"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    name = Column(String(255), nullable=False)
-    description = Column(String(1024), nullable=True)
-    banner_url = Column(String(512), nullable=True)
-    subscription_type = Column(SAEnum(SubscriptionType, name="subscription_type_enum"), nullable=True)
-    rating = Column(Float, default=0.0)
-    total_reviews = Column(Integer, default=0)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    name = Column(String, nullable=False)
+    subscription_type = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="sellers")

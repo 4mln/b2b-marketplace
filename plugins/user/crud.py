@@ -1,18 +1,22 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlalchemy.orm import Session
 from .models import User
+from passlib.context import CryptContext
 
-async def get_user_by_id(db: AsyncSession, user_id: int):
-    result = await db.execute(select(User).where(User.id == user_id))
-    return result.scalars().first()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-async def get_user_by_username(db: AsyncSession, username: str):
-    result = await db.execute(select(User).where(User.username == username))
-    return result.scalars().first()
+def get_password_hash(password: str):
+    return pwd_context.hash(password)
 
-async def create_user(db: AsyncSession, username: str, email: str, hashed_password: str):
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_user_by_id(db: Session, user_id: int):
+    return db.query(User).filter(User.id == user_id).first()
+
+def create_user(db: Session, username: str, email: str, password: str):
+    hashed_password = get_password_hash(password)
     user = User(username=username, email=email, hashed_password=hashed_password)
     db.add(user)
-    await db.commit()
-    await db.refresh(user)
+    db.commit()
+    db.refresh(user)
     return user

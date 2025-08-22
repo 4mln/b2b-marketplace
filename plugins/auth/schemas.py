@@ -20,9 +20,9 @@ class UserOut(BaseModel):
     is_active: bool
     is_superuser: bool
 
-    class Config:
-        orm_mode = True  # allows SQLAlchemy model -> Pydantic model conversion
-
+    model_config = {
+        "from_attributes": True
+}
 # -----------------------------
 # JWT Token response
 # -----------------------------

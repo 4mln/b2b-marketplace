@@ -1,15 +1,12 @@
-# plugins/test_connections/__init__.py
-from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import AsyncEngine
 from app.core.plugin_loader import PluginBase
+from plugins.test_connections import routes
 
 class Plugin(PluginBase):
     """Test Connections plugin"""
 
-    def register_routes(self, app: FastAPI):
-        print("🔌 Test Connections plugin routes registered")
-        pass
+    def register_routes(self, app):
+        app.include_router(routes.router, prefix="/connections", tags=["connections"])
 
-    async def init_db(self, engine: AsyncEngine):
-        if engine:
-            print("🗄 Test Connections plugin DB initialized with engine")
+    async def init_db(self, engine):
+        # optional DB init
+        pass

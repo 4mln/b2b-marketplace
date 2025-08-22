@@ -1,7 +1,7 @@
-# plugins/seller/schemas.py
-from enum import Enum
+from __future__ import annotations
 from pydantic import BaseModel
 from typing import Optional
+from enum import Enum
 
 class SubscriptionType(str, Enum):
     FREE = "free"
@@ -10,21 +10,19 @@ class SubscriptionType(str, Enum):
 
 class SellerBase(BaseModel):
     name: str
-    description: Optional[str] = None
-    banner_url: Optional[str] = None
-    subscription_type: Optional[SubscriptionType] = None
-    rating: Optional[float] = 0.0
-    total_reviews: Optional[int] = 0
-    is_active: Optional[bool] = True
+    subscription_type: SubscriptionType
 
 class SellerCreate(SellerBase):
-    pass
+    user_id: int
 
-class SellerUpdate(SellerBase):
-    pass
+class SellerUpdate(BaseModel):
+    name: Optional[str] = None
+    subscription_type: Optional[SubscriptionType] = None
 
 class SellerOut(SellerBase):
     id: int
+    user_id: int
 
-    class Config:
-        from_attributes = True  # Updated for Pydantic v2
+    model_config = {"from_attributes": True}
+
+SellerOut.model_rebuild()

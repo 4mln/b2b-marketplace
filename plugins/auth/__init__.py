@@ -1,16 +1,13 @@
-# plugins/auth/__init__.py
-from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import AsyncEngine
+from fastapi import APIRouter
 from app.core.plugin_loader import PluginBase
-from plugins.auth.routes import router as auth_router
+from plugins.auth import routes
 
 class Plugin(PluginBase):
-    """Auth plugin: registers routes and optionally initializes DB."""
+    """Auth plugin"""
 
-    def register_routes(self, app: FastAPI):
-        app.include_router(auth_router, prefix="/auth", tags=["Auth"])
-        print("🔌 Auth plugin routes registered")
+    def register_routes(self, app):
+        app.include_router(routes.router, prefix="/auth", tags=["auth"])
 
-    async def init_db(self, engine: AsyncEngine):
-        if engine:
-            print("🗄 Auth plugin DB initialized with engine")
+    async def init_db(self, engine):
+        # Optional async DB init
+        pass
