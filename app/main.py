@@ -1,67 +1,15 @@
-import asyncio
-from fastapi import FastAPI
-from app.core import rabbitmq
-from app.core.config import settings
-from app.core.db import engine
-from app.core.plugin_loader import load_plugins
-from app.core.connections import get_redis
-from app.api.routes.connections import router as connections_router
+# top of file
+from app.core.plugins.loader import PluginLoader, LoaderSettings
+# REMOVE: from app.core.plugin_loader import load_plugins
 
-app = FastAPI(title="B2B Marketplace API")
-
-# Include static routers
-app.include_router(connections_router)
-
-
-@app.get("/")
-async def root():
-    return {"message": "API is running", "version": settings.APP_VERSION}
-
-
-@app.on_event("startup")
-async def startup_event():
-    # Initialize Redis
-    try:
-        app.state.redis = await get_redis()
-        print("✅ Redis connected")
-    except Exception as e:
-        print(f"❌ Redis connection failed: {e}")
-
-    # Initialize RabbitMQ
-    try:
-        app.state.rmq_conn, _ = await rabbitmq.get_connection()
-        await rabbitmq.start_consumer()
-        print("✅ RabbitMQ connected and consumer started")
-    except Exception as e:
-        print(f"❌ RabbitMQ connection failed: {e}")
-
-    # Load all plugins (routes + DB)
-    try:
-        loaded_plugins = await load_plugins(app, engine)
-        print("🔌 Plugins loaded:", [p.__class__.__name__ for p in loaded_plugins])
-    except Exception as e:
-        print(f"❌ Error loading plugins: {e}")
-
-    # Optional: Print all registered routes
-    print("📌 Registered routes:")
-    for route in app.routes:
-        print(f"  {route.path} -> {route.name}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    # Close Redis
-    if hasattr(app.state, "redis") and app.state.redis:
-        try:
-            await app.state.redis.close()
-            print("🛑 Redis disconnected")
-        except Exception:
-            pass
-
-    # Close RabbitMQ
-    if hasattr(app.state, "rmq_conn") and app.state.rmq_conn:
-        try:
-            await app.state.rmq_conn.close()
-            print("🛑 RabbitMQ disconnected")
-        except Exception:
-            pass
+# inside startup_event(), before printing routes:
+try:
+    loader_settings = LoaderSettings(plugins_package="plugins", enable_hot_reload=settings.ENABLE_PLUGIN_HOT_RELOAD)
+    plugin_loader = PluginLoader(settings=loader_settings)
+    app.state.plugin_config = settings.PLUGIN_CONFIG  # optional, used by PluginBase
+    await plugin_loader.load_all(app, engine)
+    # Keep a handle so you can introspect later if you want:
+    app.state.plugin_registry = plugin_loader.registry
+    print("🔌 Plugins loaded:", [p.slug for p in plugin_loader.registry.list()])
+except Exception as e:
+    print(f"❌ Error loading plugins: {e}")
