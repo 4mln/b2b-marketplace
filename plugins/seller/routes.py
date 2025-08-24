@@ -1,41 +1,100 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Optional
 
-router = APIRouter()
+from app.core.db import get_session
+from plugins.seller.schemas import SellerCreate, SellerUpdate, SellerOut, SubscriptionType
+from plugins.seller.crud import (
+    create_seller,
+    get_seller,
+    update_seller,
+    delete_seller,
+    list_sellers,
+)
+from plugins.user.security import get_current_user
+from plugins.user.models import User
 
-@router.get("/health")
-async def health():
-    return {"ok": True, "plugin": "seller"}
-```
+router = APIRouter(prefix="/sellers", tags=["sellers"])
 
-#### `plugins/buyer/__init__.py`
-```python
-from fastapi import APIRouter, FastAPI
-from sqlalchemy.ext.asyncio import AsyncEngine
+# -----------------------------
+# Create Seller
+# -----------------------------
+@router.post("/", response_model=SellerOut)
+async def create_seller_endpoint(
+    seller: SellerCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+) -> SellerOut:
+    """Create a new seller linked to the current user."""
+    return await create_seller(db, seller, user.id)
 
-from app.core.plugins.base import PluginBase, PluginConfig
 
-router = APIRouter()
+# -----------------------------
+# Get Seller by ID
+# -----------------------------
+@router.get("/{seller_id}", response_model=SellerOut)
+async def get_seller_endpoint(
+    seller_id: int,
+    db: AsyncSession = Depends(get_session),
+) -> SellerOut:
+    """Fetch a seller by its ID."""
+    db_seller = await get_seller(db, seller_id)
+    if not db_seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    return db_seller
 
-@router.get("/")
-async def list_buyers():
-    return {"buyers": []}
 
-class BuyerConfig(PluginConfig):
-    vip_enabled: bool = False
+# -----------------------------
+# Update Seller
+# -----------------------------
+@router.put("/{seller_id}", response_model=SellerOut)
+async def update_seller_endpoint(
+    seller_id: int,
+    seller_data: SellerUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+) -> SellerOut:
+    """Update an existing seller (only owner can update)."""
+    db_seller = await update_seller(db, seller_id, seller_data, user.id)
+    if not db_seller:
+        raise HTTPException(
+            status_code=404,
+            detail="Seller not found or permission denied",
+        )
+    return db_seller
 
-class Plugin(PluginBase):
-    name = "Buyer Management"
-    slug = "buyer"
-    version = "0.1.0"
-    description = "Core buyer workflows"
-    author = "b2b-team"
-    dependencies = []
 
-    ConfigModel = BuyerConfig
+# -----------------------------
+# Delete Seller
+# -----------------------------
+@router.delete("/{seller_id}", response_model=dict)
+async def delete_seller_endpoint(
+    seller_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+) -> dict:
+    """Delete an existing seller (only owner can delete)."""
+    success = await delete_seller(db, seller_id, user.id)
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Seller not found or permission denied",
+        )
+    return {"detail": "Seller deleted successfully"}
 
-    def register_routes(self, app: FastAPI) -> None:
-        super().register_routes(app)
-        app.include_router(router, prefix=f"/{self.slug}", tags=[self.name])
 
-    async def init_db(self, engine: AsyncEngine) -> None:
-        return None
+# -----------------------------
+# List / Search Sellers
+# -----------------------------
+@router.get("/", response_model=List[SellerOut])
+async def list_sellers_endpoint(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(10, ge=1, le=100, description="Results per page"),
+    sort_by: str = Query("id", description="Field to sort by"),
+    sort_dir: str = Query("asc", regex="^(asc|desc)$", description="Sort direction"),
+    search: Optional[str] = Query(None, description="Search term for seller name"),
+    subscription_type: Optional[SubscriptionType] = Query(None, description="Filter by subscription type"),
+    db: AsyncSession = Depends(get_session),
+) -> List[SellerOut]:
+    """List all sellers with pagination, sorting, and filters."""
+    return await list_sellers(db, page, page_size, sort_by, sort_dir, search, subscription_type)

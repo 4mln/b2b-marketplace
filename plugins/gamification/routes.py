@@ -1,45 +1,81 @@
 # plugins/gamification/routes.py
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import List
 
-from .crud import get_all_badges, get_user_badges, get_gamification_progress, award_badge_to_user
-from .schemas import BadgeOut, GamificationProgress
 from app.core.db import get_session
-from plugins.user.security import get_current_user
+from plugins.gamification.models import Badge, UserPoints
+from plugins.gamification.schemas import BadgeOut, AwardPoints, AssignBadge
 from plugins.user.models import User
 
 router = APIRouter(prefix="/gamification", tags=["Gamification"])
 
-# ---------- Get all badges ----------
-@router.get("/badges", response_model=List[BadgeOut])
-async def list_badges(db: AsyncSession = Depends(get_session)):
-    return await get_all_badges(db)
-
-# ---------- Get badges of current user ----------
-@router.get("/me/badges", response_model=List[BadgeOut])
-async def list_my_badges(
-    current_user: User = Depends(get_current_user),
+# -----------------------------
+# Award points to a user
+# -----------------------------
+@router.post("/points", response_model=dict)
+async def award_points_to_user(
+    data: AwardPoints,
     db: AsyncSession = Depends(get_session)
 ):
-    return await get_user_badges(db, current_user.id)
+    user = await db.get(User, data.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-# ---------- Get gamification progress of current user ----------
-@router.get("/me/progress", response_model=GamificationProgress)
-async def my_progress(
-    current_user: User = Depends(get_current_user),
+    user_points = await db.get(UserPoints, data.user_id)
+    if not user_points:
+        user_points = UserPoints(user_id=data.user_id, points=0)
+        db.add(user_points)
+
+    user_points.points += data.points
+    await db.commit()
+    await db.refresh(user_points)
+
+    return {"user_id": user_points.user_id, "points": user_points.points}
+
+# -----------------------------
+# Assign badge to user
+# -----------------------------
+@router.post("/badges", response_model=BadgeOut)
+async def assign_badge_to_user(
+    data: AssignBadge,
     db: AsyncSession = Depends(get_session)
 ):
-    return await get_gamification_progress(db, current_user.id)
+    user = await db.get(User, data.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-# ---------- Award badge to current user ----------
-@router.post("/me/badges/{badge_id}", response_model=BadgeOut)
-async def award_badge(
-    badge_id: int,
-    current_user: User = Depends(get_current_user),
+    badge = Badge(user_id=data.user_id, badge_type=data.badge_type)
+    db.add(badge)
+    await db.commit()
+    await db.refresh(badge)
+
+    return badge
+
+# -----------------------------
+# Get all badges for a user
+# -----------------------------
+@router.get("/badges/{user_id}", response_model=List[BadgeOut])
+async def get_user_badges(
+    user_id: int,
     db: AsyncSession = Depends(get_session)
 ):
-    try:
-        return await award_badge_to_user(db, current_user.id, badge_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    result = await db.execute(
+        select(Badge).where(Badge.user_id == user_id)
+    )
+    return result.scalars().all()
+
+# -----------------------------
+# Get user points
+# -----------------------------
+@router.get("/points/{user_id}", response_model=dict)
+async def get_user_points(
+    user_id: int,
+    db: AsyncSession = Depends(get_session)
+):
+    user_points = await db.get(UserPoints, user_id)
+    if not user_points:
+        return {"user_id": user_id, "points": 0}
+    return {"user_id": user_id, "points": user_points.points}

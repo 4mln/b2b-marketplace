@@ -1,53 +1,111 @@
-from __future__ import annotations
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, ConfigDict
+from typing import List, Dict, Optional
 from datetime import datetime
-from enum import Enum as PyEnum
+from enum import Enum
 
-class BadgeTypeEnum(str, PyEnum):
-    FREE = "FREE"
-    BASIC = "BASIC"
-    PREMIUM = "PREMIUM"
+# -----------------------------
+# Badge Types
+# -----------------------------
+class BadgeTypeEnum(str, Enum):
+    BRONZE = "bronze"
+    SILVER = "silver"
+    GOLD = "gold"
+    PLATINUM = "platinum"
+    CUSTOM = "custom"
 
-class BadgeBase(BaseModel):
+# -----------------------------
+# Badge Output
+# -----------------------------
+class BadgeOut(BaseModel):
     name: str
-    description: Optional[str] = None
-    type: Optional[BadgeTypeEnum] = BadgeTypeEnum.FREE
-
-class BadgeCreate(BadgeBase):
-    points_required: Optional[int] = 0
+    description: str
+    type: BadgeTypeEnum = BadgeTypeEnum.CUSTOM
     icon_url: Optional[str] = None
 
-class BadgeUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    type: Optional[BadgeTypeEnum] = None
-    points_required: Optional[int] = None
-    icon_url: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-class BadgeOut(BadgeBase):
-    id: int
-    points_required: int
-    icon_url: Optional[str] = None
-    created_at: datetime
+# -----------------------------
+# Leaderboard Entry
+# -----------------------------
+class LeaderboardEntry(BaseModel):
+    username: str
+    score: int
+    rank: Optional[int] = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
-class UserBadgeOut(BaseModel):
-    user_id: int
-    badge_id: int
-    awarded_at: datetime
-
-    model_config = {"from_attributes": True}
-
+# -----------------------------
+# User Gamification Progress
+# -----------------------------
 class GamificationProgress(BaseModel):
     user_id: int
-    total_points: int = 0
+    points: int = 0
     level: int = 1
-    badges: List[BadgeOut] = []
+    badges: List[str] = []
+    achievements: Dict[str, bool] = {}
+    last_updated: Optional[datetime] = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
-GamificationProgress.model_rebuild()
-BadgeOut.model_rebuild()
-UserBadgeOut.model_rebuild()
+# -----------------------------
+# Create / Update Schemas
+# -----------------------------
+class GamificationUpdate(BaseModel):
+    points: Optional[int] = None
+    level: Optional[int] = None
+    badges: Optional[List[str]] = None
+    achievements: Optional[Dict[str, bool]] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class GamificationCreate(BaseModel):
+    user_id: int
+    points: int = 0
+    level: int = 1
+    badges: List[str] = []
+    achievements: Dict[str, bool] = {}
+
+    model_config = ConfigDict(from_attributes=True)
+
+# -----------------------------
+# Request Schemas for Routes
+# -----------------------------
+class AwardPoints(BaseModel):
+    user_id: int
+    points: int
+
+class AssignBadge(BaseModel):
+    user_id: int
+    name: str
+    description: str
+    badge_type: BadgeTypeEnum = BadgeTypeEnum.CUSTOM
+
+# -----------------------------
+# Response / List Models
+# -----------------------------
+class GamificationList(BaseModel):
+    items: List[GamificationProgress]
+    total: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class LeaderboardOut(BaseModel):
+    leaderboard: List[LeaderboardEntry]
+
+    model_config = ConfigDict(from_attributes=True)
+
+# -----------------------------
+# Explicit Exports
+# -----------------------------
+__all__ = [
+    "BadgeTypeEnum",
+    "BadgeOut",
+    "LeaderboardEntry",
+    "GamificationProgress",
+    "GamificationUpdate",
+    "GamificationCreate",
+    "GamificationList",
+    "LeaderboardOut",
+    "AwardPoints",
+    "AssignBadge",
+]

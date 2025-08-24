@@ -1,76 +1,77 @@
-# plugins/user/routes.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Optional
 
-from .crud import get_user_by_id, create_user
-from .schemas import UserOut, UserCreate
-from .models import User
 from app.core.db import get_session
-from plugins.user.security import get_current_user, get_password_hash
+from plugins.user.schemas import UserCreate, UserUpdate, UserOut
+from plugins.user.crud import create_user, get_user, update_user, delete_user, list_users
+from plugins.user.security import get_current_user
+from plugins.user.models import User
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter()
 
-
-# ---------- Get current user ----------
-@router.get("/me", response_model=UserOut)
-async def read_current_user(
-    current_user: User = Depends(get_current_user),
+# -----------------------------
+# Create User
+# -----------------------------
+@router.post("/", response_model=UserOut)
+async def create_user_endpoint(
+    user_data: UserCreate,
     db: AsyncSession = Depends(get_session)
 ):
-    data = await get_user_by_id(db, current_user.id, include_gamification=True)
-    if not data:
-        raise HTTPException(status_code=404, detail="User not found")
+    return await create_user(db, user_data)
 
-    return UserOut.model_validate({
-        "id": data["user"].id,
-        "username": data["user"].username,
-        "email": data["user"].email,
-        "is_active": data["user"].is_active,
-        "is_superuser": data["user"].is_superuser,
-        "sellers": data["user"].sellers,
-        "buyer": data["user"].buyer,
-        "gamification": data["gamification"]
-    })
-
-
-# ---------- Get user by ID ----------
+# -----------------------------
+# Get User by ID
+# -----------------------------
 @router.get("/{user_id}", response_model=UserOut)
-async def read_user(
+async def get_user_endpoint(
     user_id: int,
     db: AsyncSession = Depends(get_session)
 ):
-    data = await get_user_by_id(db, user_id, include_gamification=True)
-    if not data:
+    user = await get_user(db, user_id)
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    return user
 
-    return UserOut.model_validate({
-        "id": data["user"].id,
-        "username": data["user"].username,
-        "email": data["user"].email,
-        "is_active": data["user"].is_active,
-        "is_superuser": data["user"].is_superuser,
-        "sellers": data["user"].sellers,
-        "buyer": data["user"].buyer,
-        "gamification": data["gamification"]
-    })
-
-
-# ---------- Create user ----------
-@router.post("/", response_model=UserOut)
-async def create_user_endpoint(
-    user_in: UserCreate,
+# -----------------------------
+# Update User
+# -----------------------------
+@router.put("/{user_id}", response_model=UserOut)
+async def update_user_endpoint(
+    user_id: int,
+    user_data: UserUpdate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session)
 ):
-    hashed_password = get_password_hash(user_in.password)
-    user = await create_user(db, user_in.username, user_in.email, hashed_password)
+    updated_user = await update_user(db, user_id, user_data, current_user.id)
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="User not found or permission denied")
+    return updated_user
 
-    return UserOut.model_validate({
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        "is_active": user.is_active,
-        "is_superuser": user.is_superuser,
-        "sellers": [],
-        "buyer": None,
-        "gamification": None  # New user has no gamification yet
-    })
+# -----------------------------
+# Delete User
+# -----------------------------
+@router.delete("/{user_id}", response_model=dict)
+async def delete_user_endpoint(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    success = await delete_user(db, user_id, current_user.id)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found or permission denied")
+    return {"detail": "User deleted successfully"}
+
+# -----------------------------
+# List / Search Users
+# -----------------------------
+@router.get("/", response_model=List[UserOut])
+async def list_users_endpoint(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    sort_by: str = Query("id"),
+    sort_dir: str = Query("asc", regex="^(asc|desc)$"),
+    search: Optional[str] = None,
+    db: AsyncSession = Depends(get_session)
+):
+    return await list_users(db, page, page_size, sort_by, sort_dir, search)

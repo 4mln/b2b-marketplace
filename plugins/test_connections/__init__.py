@@ -1,12 +1,36 @@
-from app.core.plugin_loader import PluginBase
-from plugins.test_connections import routes
+from fastapi import FastAPI, APIRouter
+from app.core.plugins.base import PluginBase, PluginConfig
+
+class Config(PluginConfig):
+    enable_logging: bool = True
 
 class Plugin(PluginBase):
-    """Test Connections plugin"""
+    slug = "test_connections"
+    version = "0.1.0"
+    dependencies: list[str] = []
+    ConfigModel = Config
 
-    def register_routes(self, app):
-        app.include_router(routes.router, prefix="/connections", tags=["connections"])
+    def __init__(self, config: Config | None = None):
+        super().__init__(config=config)
+        self.router = APIRouter()
+        self.router.include_router(
+            test_router,
+            prefix=f"/{self.slug}",
+            tags=["Test Connections"]
+        )
+
+    def register_routes(self, app: FastAPI):
+        from plugins.test_connections.routes import router as test_router
+        app.include_router(self.router)
+
+    def register_events(self, app: FastAPI):
+        @app.on_event("startup")
+        async def startup():
+            print(f"[{self.slug}] plugin ready with config:", self.config.dict())
+
+        @app.on_event("shutdown")
+        async def shutdown():
+            print(f"[{self.slug}] plugin shutting down")
 
     async def init_db(self, engine):
-        # optional DB init
         pass

@@ -1,32 +1,42 @@
-from fastapi import APIRouter, FastAPI
-from sqlalchemy.ext.asyncio import AsyncEngine
-
+from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
-router = APIRouter()
 
-@router.get("/")
-async def list_sellers():
-    return {"sellers": []}
+class Config(PluginConfig):
+    """Config schema for Seller plugin"""
+    max_sellers: int = 500
+    enable_notifications: bool = True
 
-class SellerConfig(PluginConfig):
-    # example toggleable flags
-    onboarding_required: bool = True
 
 class Plugin(PluginBase):
-    name = "Seller Management"
     slug = "seller"
     version = "0.1.0"
-    description = "Core seller workflows"
-    author = "b2b-team"
-    dependencies = []
+    dependencies: list[str] = []
+    ConfigModel = Config
 
-    ConfigModel = SellerConfig
+    def __init__(self, config: Config | None = None):
+        super().__init__(config=config)
+        self.router = APIRouter()
 
-    def register_routes(self, app: FastAPI) -> None:
-        super().register_routes(app)
-        app.include_router(router, prefix=f"/{self.slug}", tags=[self.name])
+    def register_routes(self, app: FastAPI):
+        # ✅ Lazy import inside method to avoid early import issues
+        from plugins.seller.routes import router as seller_router
+        self.router.include_router(
+            seller_router,
+            prefix=f"/{self.slug}",
+            tags=["Seller"]
+        )
+        app.include_router(self.router)
 
-    async def init_db(self, engine: AsyncEngine) -> None:
-        # TODO: integrate plugin-specific models/migrations here
-        return None
+    def register_events(self, app: FastAPI):
+        @app.on_event("startup")
+        async def startup():
+            print(f"[{self.slug}] plugin ready with config:", self.config.dict())
+
+        @app.on_event("shutdown")
+        async def shutdown():
+            print(f"[{self.slug}] plugin shutting down")
+
+    async def init_db(self, engine):
+        # Optional async DB initialization
+        pass

@@ -124,13 +124,14 @@ class PluginLoader:
                 self.registry.add(instance)
 
                 # Dry-run register into temp app for route conflict detection
-                temp_app = FastAPI()
+                temp_app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)  # prevent /openapi.json conflicts
                 instance.register_routes(temp_app)
                 for route in temp_app.routes:
                     self.registry.claim_route(route.path, slug)
-
                 # Real registration
                 instance.register_routes(app)
+                if hasattr(instance, "register_events"):  # support event hooks
+                    instance.register_events(app)
 
                 # DB and hooks
                 await instance.init_db(engine)

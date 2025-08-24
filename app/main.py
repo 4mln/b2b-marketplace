@@ -1,15 +1,17 @@
-# top of file
-from app.core.plugins.loader import PluginLoader, LoaderSettings
-# REMOVE: from app.core.plugin_loader import load_plugins
+# app/main.py
+from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import create_async_engine
+from app.core.config import settings
+from app.core.plugins.loader import PluginLoader
 
-# inside startup_event(), before printing routes:
-try:
-    loader_settings = LoaderSettings(plugins_package="plugins", enable_hot_reload=settings.ENABLE_PLUGIN_HOT_RELOAD)
-    plugin_loader = PluginLoader(settings=loader_settings)
-    app.state.plugin_config = settings.PLUGIN_CONFIG  # optional, used by PluginBase
-    await plugin_loader.load_all(app, engine)
-    # Keep a handle so you can introspect later if you want:
-    app.state.plugin_registry = plugin_loader.registry
-    print("🔌 Plugins loaded:", [p.slug for p in plugin_loader.registry.list()])
-except Exception as e:
-    print(f"❌ Error loading plugins: {e}")
+
+app = FastAPI(title="B2B Marketplace")
+
+# Create async database engine
+engine = create_async_engine(settings.DATABASE_URL, echo=True)
+
+# Startup event: load all plugins
+@app.on_event("startup")
+async def startup_event():
+    loader = PluginLoader()          # no app or engine here
+    await loader.load_all(app, engine)  # pass app and engine here
