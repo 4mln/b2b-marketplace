@@ -1,8 +1,11 @@
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
+from plugins.test_connections.routes import router as test_router  # ✅ moved import here
+
 
 class Config(PluginConfig):
     enable_logging: bool = True
+
 
 class Plugin(PluginBase):
     slug = "test_connections"
@@ -20,7 +23,6 @@ class Plugin(PluginBase):
         )
 
     def register_routes(self, app: FastAPI):
-        from plugins.test_connections.routes import router as test_router
         app.include_router(self.router)
 
     def register_events(self, app: FastAPI):

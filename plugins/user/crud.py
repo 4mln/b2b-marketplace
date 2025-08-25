@@ -70,6 +70,9 @@ async def get_all_users(
     )
     return result.scalars().all()
 
+async def list_users(db: AsyncSession):
+    return await db.execute(select(User))
+
 # -----------------------------
 # Search users by name or email
 # -----------------------------

@@ -1,15 +1,13 @@
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
-
 class Config(PluginConfig):
-    """Config schema for Seller plugin"""
-    max_sellers: int = 500
+    """Config schema for Products plugin"""
+    max_products_per_seller: int = 1000
     enable_notifications: bool = True
 
-
 class Plugin(PluginBase):
-    slug = "seller"
+    slug = "products"
     version = "0.1.0"
     dependencies: list[str] = []
     ConfigModel = Config
@@ -22,15 +20,13 @@ class Plugin(PluginBase):
         # 1️⃣ Remove previous routes from this plugin, if any
         app.router.routes = [
             r for r in app.router.routes 
-            if getattr(r, "tags", None) != ["Seller"]
+            if getattr(r, "tags", None) != ["Products"]
         ]
-
-        # ✅ Lazy import inside method to avoid early import issues
-        from plugins.seller.routes import router as seller_router
+        from plugins.products.routes import router as products_router
         self.router.include_router(
-            seller_router,
+            products_router,
             prefix=f"/{self.slug}",
-            tags=["Seller"]
+            tags=["Products"]
         )
         app.include_router(self.router)
 

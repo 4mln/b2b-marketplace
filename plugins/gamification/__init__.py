@@ -26,6 +26,11 @@ class Plugin(PluginBase):
     # -----------------------------
     def register_routes(self, app: FastAPI):
         try:
+            # Remove existing Gamification routes to prevent duplicate Operation IDs
+            app.router.routes = [
+                r for r in app.router.routes
+                if "Gamification" not in getattr(r, "tags", [])
+            ]
             from plugins.gamification.routes import router as gamification_router
             self.router.include_router(
                 gamification_router,

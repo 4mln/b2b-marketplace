@@ -1,17 +1,15 @@
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
-
 class Config(PluginConfig):
-    """Config schema for Seller plugin"""
-    max_sellers: int = 500
+    """Config schema for Subscriptions plugin"""
+    max_subscription_plans: int = 10
     enable_notifications: bool = True
 
-
 class Plugin(PluginBase):
-    slug = "seller"
+    slug = "subscriptions"
     version = "0.1.0"
-    dependencies: list[str] = []
+    dependencies: list[str] = ["seller", "buyers"]  # depends on Sellers & Buyers
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):
@@ -19,18 +17,16 @@ class Plugin(PluginBase):
         self.router = APIRouter()
 
     def register_routes(self, app: FastAPI):
-        # 1️⃣ Remove previous routes from this plugin, if any
+        # Remove existing routes to prevent duplicates
         app.router.routes = [
-            r for r in app.router.routes 
-            if getattr(r, "tags", None) != ["Seller"]
+            r for r in app.router.routes
+            if "Subscriptions" not in getattr(r, "tags", [])
         ]
-
-        # ✅ Lazy import inside method to avoid early import issues
-        from plugins.seller.routes import router as seller_router
+        from plugins.subscriptions.routes import router as subscriptions_router
         self.router.include_router(
-            seller_router,
+            subscriptions_router,
             prefix=f"/{self.slug}",
-            tags=["Seller"]
+            tags=["Subscriptions"]
         )
         app.include_router(self.router)
 
@@ -44,5 +40,7 @@ class Plugin(PluginBase):
             print(f"[{self.slug}] plugin shutting down")
 
     async def init_db(self, engine):
-        # Optional async DB initialization
-        pass
+        # Optional: create tables for Subscriptions
+        from plugins.subscriptions.models import Base
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)

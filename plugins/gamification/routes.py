@@ -1,9 +1,9 @@
 # plugins/gamification/routes.py
 
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List
 
 from app.core.db import get_session
 from plugins.gamification.models import Badge, UserPoints
@@ -12,10 +12,11 @@ from plugins.user.models import User
 
 router = APIRouter(prefix="/gamification", tags=["Gamification"])
 
+
 # -----------------------------
 # Award points to a user
 # -----------------------------
-@router.post("/points", response_model=dict)
+@router.post("/points", response_model=dict, operation_id="gamification_award_points")
 async def award_points_to_user(
     data: AwardPoints,
     db: AsyncSession = Depends(get_session)
@@ -35,10 +36,11 @@ async def award_points_to_user(
 
     return {"user_id": user_points.user_id, "points": user_points.points}
 
+
 # -----------------------------
-# Assign badge to user
+# Assign badge to a user
 # -----------------------------
-@router.post("/badges", response_model=BadgeOut)
+@router.post("/badges", response_model=BadgeOut, operation_id="gamification_assign_badge")
 async def assign_badge_to_user(
     data: AssignBadge,
     db: AsyncSession = Depends(get_session)
@@ -54,10 +56,11 @@ async def assign_badge_to_user(
 
     return badge
 
+
 # -----------------------------
 # Get all badges for a user
 # -----------------------------
-@router.get("/badges/{user_id}", response_model=List[BadgeOut])
+@router.get("/badges/{user_id}", response_model=List[BadgeOut], operation_id="gamification_get_badges")
 async def get_user_badges(
     user_id: int,
     db: AsyncSession = Depends(get_session)
@@ -67,10 +70,11 @@ async def get_user_badges(
     )
     return result.scalars().all()
 
+
 # -----------------------------
 # Get user points
 # -----------------------------
-@router.get("/points/{user_id}", response_model=dict)
+@router.get("/points/{user_id}", response_model=dict, operation_id="gamification_get_points")
 async def get_user_points(
     user_id: int,
     db: AsyncSession = Depends(get_session)
@@ -78,4 +82,5 @@ async def get_user_points(
     user_points = await db.get(UserPoints, user_id)
     if not user_points:
         return {"user_id": user_id, "points": 0}
+
     return {"user_id": user_id, "points": user_points.points}

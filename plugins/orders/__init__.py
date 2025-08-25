@@ -1,17 +1,15 @@
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
-
 class Config(PluginConfig):
-    """Config schema for Seller plugin"""
-    max_sellers: int = 500
+    """Config schema for Orders plugin"""
+    max_orders_per_user: int = 100
     enable_notifications: bool = True
 
-
 class Plugin(PluginBase):
-    slug = "seller"
+    slug = "orders"
     version = "0.1.0"
-    dependencies: list[str] = []
+    dependencies: list[str] = ["users", "products", "buyers", "sellers"]  # core plugins
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):
@@ -21,16 +19,15 @@ class Plugin(PluginBase):
     def register_routes(self, app: FastAPI):
         # 1️⃣ Remove previous routes from this plugin, if any
         app.router.routes = [
-            r for r in app.router.routes 
-            if getattr(r, "tags", None) != ["Seller"]
+        r for r in app.router.routes 
+        if getattr(r, "tags", None) != ["Orders"]
         ]
 
-        # ✅ Lazy import inside method to avoid early import issues
-        from plugins.seller.routes import router as seller_router
+        from plugins.orders.routes import router as orders_router
         self.router.include_router(
-            seller_router,
+            orders_router,
             prefix=f"/{self.slug}",
-            tags=["Seller"]
+            tags=["Orders"]
         )
         app.include_router(self.router)
 
@@ -44,5 +41,5 @@ class Plugin(PluginBase):
             print(f"[{self.slug}] plugin shutting down")
 
     async def init_db(self, engine):
-        # Optional async DB initialization
-        pass
+         async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)

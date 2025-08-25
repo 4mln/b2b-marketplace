@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
 from app.core.db import get_session
-from plugins.seller.schemas import SellerCreate, SellerUpdate, SellerOut, SubscriptionType
+from plugins.seller.schemas import (
+    SellerCreate,
+    SellerUpdate,
+    SellerOut,
+    SubscriptionType,
+)
 from plugins.seller.crud import (
     create_seller,
     get_seller,
@@ -14,12 +19,13 @@ from plugins.seller.crud import (
 from plugins.user.security import get_current_user
 from plugins.user.models import User
 
-router = APIRouter(prefix="/sellers", tags=["sellers"])
+router = APIRouter()
+
 
 # -----------------------------
 # Create Seller
 # -----------------------------
-@router.post("/", response_model=SellerOut)
+@router.post("/", response_model=SellerOut, operation_id="seller_create")
 async def create_seller_endpoint(
     seller: SellerCreate,
     user: User = Depends(get_current_user),
@@ -32,7 +38,7 @@ async def create_seller_endpoint(
 # -----------------------------
 # Get Seller by ID
 # -----------------------------
-@router.get("/{seller_id}", response_model=SellerOut)
+@router.get("/{seller_id}", response_model=SellerOut, operation_id="seller_get_by_id")
 async def get_seller_endpoint(
     seller_id: int,
     db: AsyncSession = Depends(get_session),
@@ -47,7 +53,7 @@ async def get_seller_endpoint(
 # -----------------------------
 # Update Seller
 # -----------------------------
-@router.put("/{seller_id}", response_model=SellerOut)
+@router.put("/{seller_id}", response_model=SellerOut, operation_id="seller_update")
 async def update_seller_endpoint(
     seller_id: int,
     seller_data: SellerUpdate,
@@ -67,7 +73,7 @@ async def update_seller_endpoint(
 # -----------------------------
 # Delete Seller
 # -----------------------------
-@router.delete("/{seller_id}", response_model=dict)
+@router.delete("/{seller_id}", response_model=dict, operation_id="seller_delete")
 async def delete_seller_endpoint(
     seller_id: int,
     user: User = Depends(get_current_user),
@@ -86,15 +92,19 @@ async def delete_seller_endpoint(
 # -----------------------------
 # List / Search Sellers
 # -----------------------------
-@router.get("/", response_model=List[SellerOut])
+@router.get("/", response_model=List[SellerOut], operation_id="seller_list")
 async def list_sellers_endpoint(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=100, description="Results per page"),
     sort_by: str = Query("id", description="Field to sort by"),
     sort_dir: str = Query("asc", regex="^(asc|desc)$", description="Sort direction"),
     search: Optional[str] = Query(None, description="Search term for seller name"),
-    subscription_type: Optional[SubscriptionType] = Query(None, description="Filter by subscription type"),
+    subscription_type: Optional[SubscriptionType] = Query(
+        None, description="Filter by subscription type"
+    ),
     db: AsyncSession = Depends(get_session),
 ) -> List[SellerOut]:
     """List all sellers with pagination, sorting, and filters."""
-    return await list_sellers(db, page, page_size, sort_by, sort_dir, search, subscription_type)
+    return await list_sellers(
+        db, page, page_size, sort_by, sort_dir, search, subscription_type
+    )
