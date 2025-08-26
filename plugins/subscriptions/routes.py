@@ -1,44 +1,27 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-
 from app.core.db import get_session
-from plugins.subscriptions.models import SubscriptionPlan, UserSubscription
-from plugins.subscriptions.schemas import (
-    SubscriptionPlanCreate,
-    SubscriptionPlanOut,
-    UserSubscriptionCreate,
-    UserSubscriptionOut
-)
+from plugins.subscriptions.crud import create_subscription_plan, list_subscription_plans, assign_user_subscription, list_user_subscriptions
+from plugins.subscriptions.schemas import SubscriptionPlanCreate, SubscriptionPlanOut, UserSubscriptionCreate, UserSubscriptionOut
 
 router = APIRouter()
 
-# CRUD for Subscription Plans
 @router.post("/plans", response_model=SubscriptionPlanOut)
 async def create_plan(plan: SubscriptionPlanCreate, db: AsyncSession = Depends(get_session)):
-    new_plan = SubscriptionPlan(**plan.model_dump())
-    db.add(new_plan)
-    await db.commit()
-    await db.refresh(new_plan)
-    return new_plan
+    return await create_subscription_plan(db, plan)
 
 @router.get("/plans", response_model=List[SubscriptionPlanOut])
-async def list_plans(db: AsyncSession = Depends(get_session)):
-    result = await db.execute("SELECT * FROM subscription_plans")
-    plans = result.scalars().all()
-    return plans
+async def get_plans(db: AsyncSession = Depends(get_session)):
+    return await list_subscription_plans(db)
 
-# CRUD for User Subscriptions
-@router.post("/user", response_model=UserSubscriptionOut)
-async def assign_subscription(sub: UserSubscriptionCreate, db: AsyncSession = Depends(get_session)):
-    new_sub = UserSubscription(**sub.model_dump())
-    db.add(new_sub)
-    await db.commit()
-    await db.refresh(new_sub)
-    return new_sub
+@router.post("/assign", response_model=UserSubscriptionOut)
+async def assign_subscription(data: UserSubscriptionCreate, db: AsyncSession = Depends(get_session)):
+    try:
+        return await assign_user_subscription(db, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/user", response_model=List[UserSubscriptionOut])
-async def list_user_subscriptions(db: AsyncSession = Depends(get_session)):
-    result = await db.execute("SELECT * FROM user_subscriptions")
-    subs = result.scalars().all()
-    return subs
+@router.get("/user/{user_id}", response_model=List[UserSubscriptionOut])
+async def get_user_subscriptions(user_id: int, db: AsyncSession = Depends(get_session)):
+    return await list_user_subscriptions(db, user_id)

@@ -1,28 +1,30 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
-from sqlalchemy.orm import relationship, declarative_base
-from datetime import datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, func
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base
 
-Base = declarative_base()
+Base = declarative_base()  # or import centralized Base
 
 class SubscriptionPlan(Base):
     __tablename__ = "subscription_plans"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
-    max_products = Column(Integer, default=10)
-    max_orders = Column(Integer, default=100)
-    price = Column(Integer, default=0)  # in cents or smallest currency unit
-    duration_days = Column(Integer, default=30)
-    active = Column(Boolean, default=True)
+    name = Column(String, nullable=False, unique=True)
+    price = Column(Float, nullable=False)
+    duration_days = Column(Integer, nullable=False)  # duration in days
+    max_users = Column(Integer, nullable=True)  # optional limit
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class UserSubscription(Base):
     __tablename__ = "user_subscriptions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, index=True)  # link to Buyer or Seller later
-    plan_id = Column(Integer, ForeignKey("subscription_plans.id"))
-    start_date = Column(DateTime, default=datetime.utcnow)
-    end_date = Column(DateTime)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    plan_id = Column(Integer, ForeignKey("subscription_plans.id"), nullable=False)
+    start_date = Column(DateTime(timezone=True), server_default=func.now())
+    end_date = Column(DateTime(timezone=True), nullable=False)
     active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     plan = relationship("SubscriptionPlan")

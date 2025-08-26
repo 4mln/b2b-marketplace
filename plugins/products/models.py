@@ -1,16 +1,19 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
-from app.core.db import Base
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, func, JSON
+from sqlalchemy.orm import relationship, declarative_base
+
+Base = declarative_base()  # or import centralized Base
 
 class Product(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    seller_id = Column(Integer, ForeignKey("sellers.id"), nullable=False)
+    name = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    price = Column(Float)
-    in_stock = Column(Boolean, default=True)
-    seller_id = Column(Integer, ForeignKey("sellers.id"))
+    price = Column(Float, nullable=False)
+    stock = Column(Integer, default=0)
+    custom_metadata = Column(JSON, nullable=True)  # optional extra info
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # optional: relationship to seller
-    # seller = relationship("Seller", back_populates="products")
+    seller = relationship("Seller")

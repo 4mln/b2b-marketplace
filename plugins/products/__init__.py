@@ -2,14 +2,13 @@ from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
 class Config(PluginConfig):
-    """Config schema for Products plugin"""
     max_products_per_seller: int = 1000
     enable_notifications: bool = True
 
 class Plugin(PluginBase):
     slug = "products"
     version = "0.1.0"
-    dependencies: list[str] = []
+    dependencies: list[str] = ["users", "sellers"]
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):
@@ -17,11 +16,6 @@ class Plugin(PluginBase):
         self.router = APIRouter()
 
     def register_routes(self, app: FastAPI):
-        # 1️⃣ Remove previous routes from this plugin, if any
-        app.router.routes = [
-            r for r in app.router.routes 
-            if getattr(r, "tags", None) != ["Products"]
-        ]
         from plugins.products.routes import router as products_router
         self.router.include_router(
             products_router,
@@ -40,5 +34,5 @@ class Plugin(PluginBase):
             print(f"[{self.slug}] plugin shutting down")
 
     async def init_db(self, engine):
-        # Optional async DB initialization
-        pass
+         async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)

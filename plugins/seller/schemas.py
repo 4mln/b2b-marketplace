@@ -11,7 +11,6 @@ class SubscriptionType(str, Enum):
     PREMIUM = "premium"
     VIP = "vip"
 
-
 # -----------------------------
 # Seller Base
 # -----------------------------
@@ -22,14 +21,12 @@ class SellerBase(BaseModel):
     subscription: Optional[SubscriptionType] = SubscriptionType.BASIC
     model_config = {"from_attributes": True}
 
-
 # -----------------------------
 # Seller Create
 # -----------------------------
 class SellerCreate(SellerBase):
     password: str
     model_config = {"from_attributes": True}
-
 
 # -----------------------------
 # Seller Update
@@ -41,7 +38,6 @@ class SellerUpdate(BaseModel):
     subscription: Optional[SubscriptionType] = None
     model_config = {"from_attributes": True}
 
-
 # -----------------------------
 # Seller Output
 # -----------------------------
@@ -51,7 +47,6 @@ class SellerOut(SellerBase):
     updated_at: Optional[datetime] = None
     model_config = {"from_attributes": True}
 
-
 # -----------------------------
 # List of Sellers
 # -----------------------------
@@ -60,9 +55,8 @@ class SellerList(BaseModel):
     total: int
     model_config = {"from_attributes": True}
 
-
 # -----------------------------
-# Badge Output
+# Gamification / Leaderboard
 # -----------------------------
 class BadgeOut(BaseModel):
     name: str
@@ -70,20 +64,12 @@ class BadgeOut(BaseModel):
     icon_url: Optional[str] = None
     model_config = {"from_attributes": True}
 
-
-# -----------------------------
-# Leaderboard Entry
-# -----------------------------
 class LeaderboardEntry(BaseModel):
     username: str
     score: int
     rank: Optional[int] = None
     model_config = {"from_attributes": True}
 
-
-# -----------------------------
-# User Gamification Progress
-# -----------------------------
 class GamificationProgress(BaseModel):
     user_id: int
     points: int = 0
@@ -93,17 +79,12 @@ class GamificationProgress(BaseModel):
     last_updated: Optional[datetime] = None
     model_config = {"from_attributes": True}
 
-
-# -----------------------------
-# Optional: Create / Update Schemas
-# -----------------------------
 class GamificationUpdate(BaseModel):
     points: Optional[int] = None
     level: Optional[int] = None
     badges: Optional[List[str]] = None
     achievements: Optional[Dict[str, bool]] = None
     model_config = {"from_attributes": True}
-
 
 class GamificationCreate(BaseModel):
     user_id: int
@@ -113,15 +94,10 @@ class GamificationCreate(BaseModel):
     achievements: Dict[str, bool] = {}
     model_config = {"from_attributes": True}
 
-
-# -----------------------------
-# Response / List Models
-# -----------------------------
 class GamificationList(BaseModel):
     items: List[GamificationProgress]
     total: int
     model_config = {"from_attributes": True}
-
 
 class LeaderboardOut(BaseModel):
     leaderboard: List[LeaderboardEntry]

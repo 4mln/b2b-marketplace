@@ -21,7 +21,6 @@ from plugins.user.models import User
 
 router = APIRouter()
 
-
 # -----------------------------
 # Create Seller
 # -----------------------------
@@ -31,9 +30,7 @@ async def create_seller_endpoint(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ) -> SellerOut:
-    """Create a new seller linked to the current user."""
     return await create_seller(db, seller, user.id)
-
 
 # -----------------------------
 # Get Seller by ID
@@ -43,12 +40,10 @@ async def get_seller_endpoint(
     seller_id: int,
     db: AsyncSession = Depends(get_session),
 ) -> SellerOut:
-    """Fetch a seller by its ID."""
     db_seller = await get_seller(db, seller_id)
     if not db_seller:
         raise HTTPException(status_code=404, detail="Seller not found")
     return db_seller
-
 
 # -----------------------------
 # Update Seller
@@ -60,15 +55,10 @@ async def update_seller_endpoint(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ) -> SellerOut:
-    """Update an existing seller (only owner can update)."""
     db_seller = await update_seller(db, seller_id, seller_data, user.id)
     if not db_seller:
-        raise HTTPException(
-            status_code=404,
-            detail="Seller not found or permission denied",
-        )
+        raise HTTPException(status_code=404, detail="Seller not found or permission denied")
     return db_seller
-
 
 # -----------------------------
 # Delete Seller
@@ -79,15 +69,10 @@ async def delete_seller_endpoint(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ) -> dict:
-    """Delete an existing seller (only owner can delete)."""
     success = await delete_seller(db, seller_id, user.id)
     if not success:
-        raise HTTPException(
-            status_code=404,
-            detail="Seller not found or permission denied",
-        )
+        raise HTTPException(status_code=404, detail="Seller not found or permission denied")
     return {"detail": "Seller deleted successfully"}
-
 
 # -----------------------------
 # List / Search Sellers
@@ -99,12 +84,7 @@ async def list_sellers_endpoint(
     sort_by: str = Query("id", description="Field to sort by"),
     sort_dir: str = Query("asc", regex="^(asc|desc)$", description="Sort direction"),
     search: Optional[str] = Query(None, description="Search term for seller name"),
-    subscription_type: Optional[SubscriptionType] = Query(
-        None, description="Filter by subscription type"
-    ),
+    subscription_type: Optional[SubscriptionType] = Query(None, description="Filter by subscription type"),
     db: AsyncSession = Depends(get_session),
 ) -> List[SellerOut]:
-    """List all sellers with pagination, sorting, and filters."""
-    return await list_sellers(
-        db, page, page_size, sort_by, sort_dir, search, subscription_type
-    )
+    return await list_sellers(db, offset=(page-1)*page_size, limit=page_size)

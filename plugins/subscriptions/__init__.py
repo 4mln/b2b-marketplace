@@ -9,7 +9,7 @@ class Config(PluginConfig):
 class Plugin(PluginBase):
     slug = "subscriptions"
     version = "0.1.0"
-    dependencies: list[str] = ["seller", "buyers"]  # depends on Sellers & Buyers
+    dependencies: list[str] = ["users", "payments"]  # core plugins
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):
@@ -17,11 +17,11 @@ class Plugin(PluginBase):
         self.router = APIRouter()
 
     def register_routes(self, app: FastAPI):
-        # Remove existing routes to prevent duplicates
+        # Remove previous routes if any
         app.router.routes = [
-            r for r in app.router.routes
-            if "Subscriptions" not in getattr(r, "tags", [])
+            r for r in app.router.routes if getattr(r, "tags", None) != ["Subscriptions"]
         ]
+
         from plugins.subscriptions.routes import router as subscriptions_router
         self.router.include_router(
             subscriptions_router,
@@ -40,7 +40,6 @@ class Plugin(PluginBase):
             print(f"[{self.slug}] plugin shutting down")
 
     async def init_db(self, engine):
-        # Optional: create tables for Subscriptions
         from plugins.subscriptions.models import Base
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

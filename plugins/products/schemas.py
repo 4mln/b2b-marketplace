@@ -1,23 +1,27 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
+from datetime import datetime
 
-class ProductBase(BaseModel):
+class ProductCreate(BaseModel):
+    seller_id: int
     name: str
     description: Optional[str] = None
     price: float
-    in_stock: bool = True
+    stock: Optional[int] = 0
+    custom_metadata: Optional[Dict] = None
 
-class ProductCreate(ProductBase):
-    pass
+    model_config = {"extra": "forbid"}
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
-    in_stock: Optional[bool] = None
+    stock: Optional[int] = None
+    custom_metadata: Optional[Dict] = None
 
-class ProductOut(ProductBase):
+    model_config = {"extra": "forbid"}
+
+class ProductOut(ProductCreate):
     id: int
-    seller_id: int
-
-    model_config = {"from_attributes": True}  # instead of orm_mode
+    created_at: datetime
+    updated_at: datetime

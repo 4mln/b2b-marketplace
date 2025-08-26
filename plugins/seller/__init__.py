@@ -1,12 +1,10 @@
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
-
 class Config(PluginConfig):
     """Config schema for Seller plugin"""
     max_sellers: int = 500
     enable_notifications: bool = True
-
 
 class Plugin(PluginBase):
     slug = "seller"
@@ -19,13 +17,12 @@ class Plugin(PluginBase):
         self.router = APIRouter()
 
     def register_routes(self, app: FastAPI):
-        # 1️⃣ Remove previous routes from this plugin, if any
+        # Remove previous routes for this plugin if they exist
         app.router.routes = [
             r for r in app.router.routes 
             if getattr(r, "tags", None) != ["Seller"]
         ]
-
-        # ✅ Lazy import inside method to avoid early import issues
+        # Lazy import to avoid early import issues
         from plugins.seller.routes import router as seller_router
         self.router.include_router(
             seller_router,
@@ -44,5 +41,5 @@ class Plugin(PluginBase):
             print(f"[{self.slug}] plugin shutting down")
 
     async def init_db(self, engine):
-        # Optional async DB initialization
+        # Optional async DB init (if needed)
         pass

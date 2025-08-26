@@ -11,4 +11,5 @@ class Seller(Base):
     subscription_type = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"))
 
+    # Relationship to User (owner)
     user = relationship("User", back_populates="sellers")
