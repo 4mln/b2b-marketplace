@@ -7,6 +7,7 @@ from plugins.orders.crud import create_order, get_order, update_order, delete_or
 from app.core.db import get_session
 from plugins.user.models import User
 from plugins.user.security import get_current_user
+from plugins.products.dependencies import enforce_product_limit  # ✅ reuse limit check
 
 router = APIRouter()
 
@@ -15,6 +16,7 @@ async def create_order_endpoint(
     order: OrderCreate,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
+    _: None = Depends(enforce_product_limit),   # ✅ enforce limit here too
 ):
     return await create_order(db, order)
 

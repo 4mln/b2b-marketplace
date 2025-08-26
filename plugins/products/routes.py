@@ -13,6 +13,7 @@ from plugins.products.crud import (
 )
 from plugins.user.security import get_current_user
 from plugins.user.models import User
+from plugins.products.dependencies import enforce_product_limit
 
 router = APIRouter()
 
@@ -24,6 +25,7 @@ async def create_product_endpoint(
     product: ProductCreate,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
+    _: None = Depends(enforce_product_limit), # ✅ enforce product limit
 ) -> ProductOut:
     """Create a new product linked to the current user (seller)."""
     return await create_product(db, product, user.id)

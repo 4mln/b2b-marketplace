@@ -15,3 +15,4 @@ engine = create_async_engine(settings.DATABASE_URL, echo=True)
 async def startup_event():
     loader = PluginLoader()          # no app or engine here
     await loader.load_all(app, engine)  # pass app and engine here
+    loader.enable_hot_reload(app, engine)
