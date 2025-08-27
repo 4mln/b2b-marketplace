@@ -1,4 +1,5 @@
 aio-pika==9.5.7
+twilio==8.11.0
 aiormq==6.9.0
 alembic==1.16.4
 annotated-types==0.7.0

@@ -10,6 +10,13 @@ from .models import User
 from .schemas import UserCreate, UserOut, TokenResponse
 from .jwt import create_token_pair, verify_token
 from .security import get_password_hash, verify_password
+from twilio.rest import Client  # Assuming Twilio for SMS
+import os
+from fastapi import UploadFile, File
+import random
+from datetime import timedelta, datetime
+
+from sqlalchemy import update
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -76,6 +83,36 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     # Create access and refresh tokens
     token_data = {"sub": str(user.id)}
     return create_token_pair(token_data)
+
+@router.post("/send-otp")
+async def send_otp(phone: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    otp = str(random.randint(100000, 999999))
+    expiry = datetime.now() + timedelta(minutes=10)
+    await db.execute(update(User).where(User.id == current_user.id).values(otp_code=otp, otp_expiry=expiry))
+    await db.commit()
+    # Send SMS via Twilio
+    client = Client(os.environ['TWILIO_SID'], os.environ['TWILIO_TOKEN'])
+    message = client.messages.create(body=f"Your OTP is {otp}", from_=os.environ['TWILIO_PHONE'], to=phone)
+    return {"message": "OTP sent"}
+
+@router.post("/verify-otp")
+async def verify_otp(otp: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    if current_user.otp_code != otp or current_user.otp_expiry < datetime.now():
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+    await db.execute(update(User).where(User.id == current_user.id).values(kyc_status="otp_verified", otp_code=None, otp_expiry=None))
+    await db.commit()
+    return {"message": "OTP verified"}
+
+@router.post("/upload-document")
+async def upload_document(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    if current_user.kyc_status != "otp_verified":
+        raise HTTPException(status_code=400, detail="Complete OTP verification first")
+    path = f"documents/{current_user.id}_{file.filename}"
+    with open(path, "wb") as buffer:
+        buffer.write(await file.read())
+    await db.execute(update(User).where(User.id == current_user.id).values(id_document=path, kyc_status="verified"))
+    await db.commit()
+    return {"message": "Document uploaded and KYC completed"}
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(refresh_token: str, db: AsyncSession = Depends(get_session)):

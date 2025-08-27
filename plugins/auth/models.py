@@ -11,6 +11,11 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
+    kyc_status = Column(String, default="pending", nullable=False)  # pending, verified, rejected
+    otp_code = Column(String, nullable=True)
+    otp_expiry = Column(DateTime, nullable=True)
+    id_document = Column(String, nullable=True)  # Path to uploaded ID document
+    role = Column(String, default="user", nullable=False)  # user, seller, buyer
 
     # Add this relationship to fix the mapper error
     sellers = relationship(
