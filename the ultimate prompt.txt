@@ -1,0 +1,43 @@
+a b2b platform where:
+
+A- every one can select a guild from guild list and visit a free product list of that guild(not the seller info and only products).
+
+B- other stuff is accessible upon registration:
+	B1- User First select a guild from list(the guild list is starting with one guild and more guild will be added later)
+	B2- User enters a valid phone number and receives a verification code to continue (via Iran mobile operators)
+	B3- User selects his/her role as a Seller, Buyer or both.
+	B4- User can add a password for his/her account optionally (forget password via sms verification)
+	B4- Sellers/Buyers most Provide:
+		B4-0- Mobile number (provided before) / Optional password(if provided before)
+		B4-1- Full name
+		B4-2- optional-ID number
+		B4-3- optional-business name
+		B4-4- optional-business phone number(up to 4 different phone numbers)
+		B4-5- optional-business address(up to 3 different addresses)
+		B4-6- optional-email
+		B4-7- optional-website
+		B4-8- optional-telegram id
+		B4-9- optional-whatsapp id
+		B4-10- optional-business photo
+		B4-11- optional-banner photo
+		B4-12- optional bank account number(up to 3 different account numbers)
+		B4-13- other stuff will be added if necessary...
+C- Sellers/Buyers have a in-app wallet that can be charged with both fiat(via Iran's online bank payment-hubs) and later crypto will be added.
+	C1- App will be free at first and then payments will come:
+		C1-1- Everything in app can be purchased via in-app wallet or direct online payment(a minimum price will be set)
+		C1-2- After free faze there will be limitation for unpaid users (limitations will be manageable later)
+	C2- Sellers/Buyers can have monthly/yearly subscription plans (bronze - silver - gold) with different benefits.
+	C3- sellers can pay for advertisements
+		c3-1- advertisements type are:
+			- Inside advertisements section(which has tops adds and normal adds)
+			- Send to buyers via sms panel(buyers will ne asked to receive via sms or not) or in app pop-up banners and email.
+	C4- buyers can pay for advertisement of their requests
+		c4-1- advertisements type are:
+			- Inside requests section(which has tops adds and normal adds)
+			- Send to sellers via sms panel(sellers will ne asked to receive via sms or not) or in app pop-up banners and email.
+D- Sellers/Buyers have a dashboard to edit their info and manage their in app-wallet.
+E- Sellers have a Virtual store front where they can add their price lists and goods pictures and info (according to limitations).
+F- Buyers have a request list section that they can edit their requests (according to limitations).
+G- buyers can rate and review sellers:
+	G1- Sellers will be awarded or punished accordingly
+	G2- Top sellers will be announced

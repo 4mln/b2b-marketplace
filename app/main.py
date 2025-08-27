@@ -11,6 +11,7 @@ from app.core.logging import setup_logging_middleware
 from app.core.ip_security import setup_ip_security
 from app.core.api_key import setup_api_key_management
 from app.core.docs import setup_api_documentation
+from app.core.security_docs import apply_security_requirements, add_security_examples
 
 # Initialize FastAPI app with metadata
 app = FastAPI(
@@ -71,6 +72,10 @@ async def startup_event():
         await loader.load_all(app, engine)
         if settings.ENABLE_PLUGIN_HOT_RELOAD:
             loader.enable_hot_reload(app, engine)
+            
+        # Apply security documentation after plugins are loaded
+        apply_security_requirements(app)
+        add_security_examples(app)
     except Exception as e:
         print(f"Error loading plugins: {e}")
         raise

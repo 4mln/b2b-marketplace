@@ -14,6 +14,8 @@ from plugins.products.crud import (
 from plugins.user.security import get_current_user
 from plugins.user.models import User
 from plugins.products.dependencies import enforce_product_limit
+from app.core.openapi import enhance_endpoint_docs
+from plugins.products.docs import product_docs
 
 router = APIRouter()
 
@@ -95,3 +97,7 @@ async def list_products_endpoint(
 ) -> List[ProductOut]:
     """List all products with pagination, sorting, and filters."""
     return await list_products(db, page, page_size, sort_by, sort_dir, search)
+
+
+# Apply OpenAPI documentation enhancements
+enhance_endpoint_docs(router, product_docs)

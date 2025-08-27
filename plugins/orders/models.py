@@ -12,8 +12,10 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     buyer_id = Column(Integer, nullable=False)
     seller_id = Column(Integer, nullable=False)
-    product_ids = Column(JSON, nullable=False)  # store list of product IDs
+    product_ids = Column(JSON, nullable=False)  # store list of product items with quantity and price
     total_amount = Column(Float, nullable=False)
     status = Column(SQLAEnum(OrderStatus), default=OrderStatus.pending, nullable=False)
+    shipping_address = Column(JSON, nullable=True)  # store shipping address as JSON
+    notes = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -1,11 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func
 from sqlalchemy.exc import SQLAlchemyError
-from plugins.orders.models import Order, OrderStatus
-from plugins.orders.schemas import OrderCreate, OrderUpdate
+from plugins.orders.models import Order
+from plugins.orders.schemas import OrderCreate, OrderUpdate, OrderStatus
 from plugins.products.models import Product
 from plugins.orders.__init__ import Plugin  # to get max_orders_per_user
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 async def create_order(db: AsyncSession, order: OrderCreate, buyer_id: int):
     # Validate max orders per user
@@ -16,22 +16,30 @@ async def create_order(db: AsyncSession, order: OrderCreate, buyer_id: int):
     if existing_count >= max_orders:
         raise ValueError(f"Buyer has reached the maximum number of orders: {max_orders}")
 
-    # Validate products exist
-    products = await db.execute(select(Product).where(Product.id.in_(order.product_ids)))
+    # Validate products exist and calculate total amount
+    product_ids = [item.product_id for item in order.items]
+    products = await db.execute(select(Product).where(Product.id.in_(product_ids)))
     products_list = products.scalars().all()
-    if len(products_list) != len(order.product_ids):
+    products_dict = {p.id: p for p in products_list}
+    
+    if len(products_list) != len(product_ids):
         raise ValueError("One or more products do not exist")
-
-    # Validate total_amount
-    total_price = sum(p.price for p in products_list)
-    if abs(total_price - order.total_amount) > 0.01:
-        raise ValueError(f"Total amount mismatch. Expected {total_price}")
+    
+    # Calculate total amount
+    total_amount = sum(item.quantity * item.unit_price for item in order.items)
+    
+    # Create product_ids JSON for database storage
+    product_ids_json = [{
+        "product_id": item.product_id,
+        "quantity": item.quantity,
+        "unit_price": item.unit_price
+    } for item in order.items]
 
     db_order = Order(
         buyer_id=buyer_id,
         seller_id=order.seller_id,
-        product_ids=order.product_ids,
-        total_amount=order.total_amount,
+        product_ids=product_ids_json,  # Store as JSON
+        total_amount=total_amount,
         status=OrderStatus.pending
     )
     try:

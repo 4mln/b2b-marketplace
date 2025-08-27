@@ -6,13 +6,15 @@ from datetime import timedelta
 
 from app.core.db import get_session  # async DB session dependency
 from plugins.user.security import get_current_user  # moved here for proper dependency
+from app.core.openapi import enhance_endpoint_docs
+from plugins.auth.docs import auth_docs
 
 router = APIRouter()
 
 # -----------------------------
 # Signup endpoint
 # -----------------------------
-@router.post("/signup")
+@router.post("/signup", operation_id="signup")
 async def signup(user_in=Depends(), db: AsyncSession = Depends(get_session)):
     # ✅ Local imports to avoid circular dependency
     from plugins.auth.schemas import UserCreate, UserOut
@@ -37,7 +39,7 @@ async def signup(user_in=Depends(), db: AsyncSession = Depends(get_session)):
 # -----------------------------
 # Login endpoint (OAuth2 standard)
 # -----------------------------
-@router.post("/token")
+@router.post("/token", operation_id="login_for_access_token")
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_session),
@@ -65,9 +67,13 @@ async def login_for_access_token(
 # -----------------------------
 # Get current user
 # -----------------------------
-@router.get("/me")
+@router.get("/me", operation_id="read_current_user")
 async def read_current_user(current_user=Depends(get_current_user)):
     # ✅ Local imports
     from plugins.auth.schemas import UserOut
 
     return UserOut.model_validate(current_user)
+
+
+# Apply OpenAPI documentation enhancements
+enhance_endpoint_docs(router, auth_docs)

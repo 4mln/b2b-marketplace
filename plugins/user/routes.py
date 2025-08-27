@@ -7,13 +7,15 @@ from plugins.user.schemas import UserCreate, UserUpdate, UserOut
 from plugins.user.crud import create_user, get_user, update_user, delete_user, list_users
 from plugins.user.security import get_current_user
 from plugins.user.models import User
+from app.core.openapi import enhance_endpoint_docs
+from plugins.user.docs import user_docs
 
 router = APIRouter()
 
 # -----------------------------
 # Create User
 # -----------------------------
-@router.post("/", response_model=UserOut)
+@router.post("/", response_model=UserOut, operation_id="create_user_endpoint")
 async def create_user_endpoint(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_session)
@@ -23,7 +25,7 @@ async def create_user_endpoint(
 # -----------------------------
 # Get User by ID
 # -----------------------------
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/{user_id}", response_model=UserOut, operation_id="get_user_endpoint")
 async def get_user_endpoint(
     user_id: int,
     db: AsyncSession = Depends(get_session)
@@ -36,7 +38,7 @@ async def get_user_endpoint(
 # -----------------------------
 # Update User
 # -----------------------------
-@router.put("/{user_id}", response_model=UserOut)
+@router.put("/{user_id}", response_model=UserOut, operation_id="update_user_endpoint")
 async def update_user_endpoint(
     user_id: int,
     user_data: UserUpdate,
@@ -51,7 +53,7 @@ async def update_user_endpoint(
 # -----------------------------
 # Delete User
 # -----------------------------
-@router.delete("/{user_id}", response_model=dict)
+@router.delete("/{user_id}", response_model=dict, operation_id="delete_user_endpoint")
 async def delete_user_endpoint(
     user_id: int,
     current_user: User = Depends(get_current_user),
@@ -65,7 +67,7 @@ async def delete_user_endpoint(
 # -----------------------------
 # List / Search Users
 # -----------------------------
-@router.get("/", response_model=List[UserOut])
+@router.get("/", response_model=List[UserOut], operation_id="list_users_endpoint")
 async def list_users_endpoint(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
@@ -75,3 +77,7 @@ async def list_users_endpoint(
     db: AsyncSession = Depends(get_session)
 ):
     return await list_users(db, page, page_size, sort_by, sort_dir, search)
+
+
+# Apply OpenAPI documentation enhancements
+enhance_endpoint_docs(router, user_docs)
