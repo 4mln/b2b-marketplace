@@ -12,6 +12,16 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
     RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
 
+    # Security
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    
+    # Rate limiting
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+    RATE_LIMIT_MAX_REQUESTS: int = 100
+
     # Plugin system
     ENABLE_PLUGIN_HOT_RELOAD: bool = False
     PLUGIN_CONFIG: Dict[str, Dict[str, Any]] = {}
