@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -17,9 +17,22 @@ class User(Base):
     id_document = Column(String, nullable=True)  # Path to uploaded ID document
     role = Column(String, default="user", nullable=False)  # user, seller, buyer
 
-    # Add this relationship to fix the mapper error
+    # Relationships
     sellers = relationship(
         "Seller",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    
+    buyer = relationship(
+        "Buyer",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False
+    )
+    
+    wallets = relationship(
+        "Wallet",
         back_populates="user",
         cascade="all, delete-orphan"
     )
