@@ -12,6 +12,9 @@ class SubscriptionPlan(Base):
     price = Column(Float, nullable=False)
     duration_days = Column(Integer, nullable=False)  # duration in days
     max_users = Column(Integer, nullable=True)  # optional limit
+    max_products = Column(Integer, nullable=True)
+    max_rfqs = Column(Integer, nullable=True)
+    boost_multiplier = Column(Float, nullable=True)  # e.g., ranking/visibility boost
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

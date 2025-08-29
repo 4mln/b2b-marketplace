@@ -4,6 +4,7 @@ from datetime import datetime
 
 class ProductCreate(BaseModel):
     seller_id: int
+    guild_id: Optional[int] = None
     name: str
     description: Optional[str] = None
     price: float
@@ -18,6 +19,7 @@ class ProductUpdate(BaseModel):
     price: Optional[float] = None
     stock: Optional[int] = None
     custom_metadata: Optional[Dict] = None
+    guild_id: Optional[int] = None
 
     model_config = {"extra": "forbid"}
 

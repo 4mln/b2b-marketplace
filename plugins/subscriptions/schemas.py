@@ -7,6 +7,9 @@ class SubscriptionPlanCreate(BaseModel):
     price: float
     duration_days: int
     max_users: Optional[int] = None
+    max_products: Optional[int] = None
+    max_rfqs: Optional[int] = None
+    boost_multiplier: Optional[float] = None
 
     model_config = {"extra": "forbid"}
 

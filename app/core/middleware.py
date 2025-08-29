@@ -45,5 +45,20 @@ class RateLimitMiddleware:
 
         return await call_next(request)
 
+
+class LocaleMiddleware:
+    def __init__(self) -> None:
+        pass
+
+    async def __call__(self, request: Request, call_next):
+        accept_language = request.headers.get("Accept-Language", "")
+        locale = "fa" if "fa" in accept_language.lower() else "en"
+        direction = "rtl" if locale == "fa" else "ltr"
+        response = await call_next(request)
+        response.headers["Content-Language"] = locale
+        response.headers["X-Text-Direction"] = direction
+        return response
+
 def setup_middleware(app: FastAPI, redis: Redis):
     app.add_middleware(RateLimitMiddleware, redis=redis)
+    app.add_middleware(LocaleMiddleware)

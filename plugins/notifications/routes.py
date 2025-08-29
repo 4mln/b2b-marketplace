@@ -32,3 +32,36 @@ async def list_notifications(
     ][:limit]
 
     return NotificationResponse(notifications=notifications)
+
+
+# -----------------------------
+# Send notifications via channels (stubs)
+# -----------------------------
+@router.post("/send/sms")
+async def send_sms(phone: str, message: str):
+    print(f"[SMS] to {phone}: {message}")
+    return {"detail": "sent"}
+
+
+@router.post("/send/email")
+async def send_email(to: str, subject: str, body: str):
+    print(f"[Email] to {to}: {subject}")
+    return {"detail": "sent"}
+
+
+@router.post("/send/push")
+async def send_push(token: str, title: str, body: str):
+    print(f"[Push] to {token}: {title}")
+    return {"detail": "sent"}
+
+
+@router.post("/send/telegram")
+async def send_telegram(chat_id: str, message: str):
+    print(f"[Telegram] to {chat_id}: {message}")
+    return {"detail": "sent"}
+
+
+@router.post("/send/whatsapp")
+async def send_whatsapp(phone: str, message: str):
+    print(f"[WhatsApp] to {phone}: {message}")
+    return {"detail": "sent"}

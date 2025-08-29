@@ -12,6 +12,8 @@ from app.core.ip_security import setup_ip_security
 from app.core.api_key import setup_api_key_management
 from app.core.docs import setup_api_documentation
 from app.core.security_docs import apply_security_requirements, add_security_examples
+from fastapi.responses import JSONResponse
+from fastapi import Request
 
 # Initialize FastAPI app with metadata
 app = FastAPI(
@@ -85,3 +87,30 @@ async def startup_event():
 async def shutdown_event():
     await engine.dispose()
     await redis.close()
+
+
+@app.get("/manifest.json")
+async def pwa_manifest():
+    return JSONResponse(
+        {
+            "name": settings.APP_NAME,
+            "short_name": settings.APP_NAME,
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#0d9488",
+            "icons": [],
+            "lang": "fa",
+            "dir": "rtl",
+        }
+    )
+
+
+@app.get("/service-worker.js")
+async def service_worker():
+    js = (
+        "self.addEventListener('install', e => { self.skipWaiting(); });\n"
+        "self.addEventListener('activate', e => { self.clients.claim(); });\n"
+        "self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).catch(() => new Response('', {status: 200}))); });\n"
+    )
+    return JSONResponse(js, media_type="application/javascript")

@@ -55,15 +55,41 @@ async def list_products(
     page_size: int = 10,
     sort_by: str = "id",
     sort_dir: str = "asc",
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    guild_id: Optional[int] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    city: Optional[str] = None,
+    brand: Optional[str] = None,
+    apply_boosts: bool = False,
+    synonyms: Optional[list[str]] = None,
 ) -> List[Product]:
     query = select(Product)
     if search:
         query = query.where(Product.name.ilike(f"%{search}%"))
-    if sort_dir.lower() == "desc":
-        query = query.order_by(getattr(Product, sort_by).desc())
+    # naive synonyms: OR search terms
+    if synonyms:
+        for syn in synonyms:
+            query = query.where(Product.name.ilike(f"%{syn}%"))
+    if guild_id is not None:
+        query = query.where(Product.guild_id == guild_id)
+    if min_price is not None:
+        query = query.where(Product.price >= min_price)
+    if max_price is not None:
+        query = query.where(Product.price <= max_price)
+    # city and brand stored in custom_metadata JSON (if present)
+    if city is not None:
+        query = query.where(Product.custom_metadata["city"].as_string() == city)
+    if brand is not None:
+        query = query.where(Product.custom_metadata["brand"].as_string() == brand)
+    if apply_boosts and sort_by in ("id", "created_at"):
+        # Placeholder: prioritize newer products when boosted
+        query = query.order_by(getattr(Product, "created_at").desc())
     else:
-        query = query.order_by(getattr(Product, sort_by).asc())
+        if sort_dir.lower() == "desc":
+            query = query.order_by(getattr(Product, sort_by).desc())
+        else:
+            query = query.order_by(getattr(Product, sort_by).asc())
     offset = (page - 1) * page_size
     result = await db.execute(query.offset(offset).limit(page_size))
     return result.scalars().all()

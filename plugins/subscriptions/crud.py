@@ -41,3 +41,23 @@ async def assign_user_subscription(db: AsyncSession, data: UserSubscriptionCreat
 async def list_user_subscriptions(db: AsyncSession, user_id: int):
     result = await db.execute(select(UserSubscription).where(UserSubscription.user_id == user_id))
     return result.scalars().all()
+
+
+async def get_active_subscription(db: AsyncSession, user_id: int) -> UserSubscription | None:
+    now = datetime.utcnow()
+    result = await db.execute(
+        select(UserSubscription)
+        .where(UserSubscription.user_id == user_id)
+        .where(UserSubscription.active == True)  # noqa: E712
+        .where(UserSubscription.end_date > now)
+        .order_by(UserSubscription.end_date.desc())
+    )
+    return result.scalars().first()
+
+
+async def check_plan_limits(user_id: int, db: AsyncSession) -> SubscriptionPlan | None:
+    sub = await get_active_subscription(db, user_id)
+    if not sub:
+        return None
+    plan = await db.get(SubscriptionPlan, sub.plan_id)
+    return plan

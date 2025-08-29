@@ -18,6 +18,8 @@ from plugins.seller.crud import (
 )
 from plugins.user.security import get_current_user
 from plugins.user.models import User
+from plugins.products.crud import list_products
+from plugins.auth.models import User as AuthUser
 
 router = APIRouter()
 
@@ -88,3 +90,24 @@ async def list_sellers_endpoint(
     db: AsyncSession = Depends(get_session),
 ) -> List[SellerOut]:
     return await list_sellers(db, offset=(page-1)*page_size, limit=page_size)
+
+
+# -----------------------------
+# Public storefront
+# -----------------------------
+@router.get("/{seller_id}/storefront", operation_id="seller_storefront")
+async def seller_storefront(
+    seller_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    db: AsyncSession = Depends(get_session),
+):
+    seller = await get_seller(db, seller_id)
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    products = await list_products(db, page=page, page_size=page_size, sort_by="id", sort_dir="desc", search=None)
+    products = [p for p in products if getattr(p, "status", "approved") == "approved"]
+    # KYC badge from auth User.kyc_status
+    owner = await db.get(AuthUser, seller.user_id)
+    kyc_badge = getattr(owner, "kyc_status", "pending") if owner else "pending"
+    return {"seller": seller, "kyc_badge": kyc_badge, "products": products}

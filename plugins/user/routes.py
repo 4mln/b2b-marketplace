@@ -9,6 +9,7 @@ from plugins.user.security import get_current_user
 from plugins.user.models import User
 from app.core.openapi import enhance_endpoint_docs
 from plugins.user.docs import user_docs
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -63,6 +64,22 @@ async def delete_user_endpoint(
     if not success:
         raise HTTPException(status_code=404, detail="User not found or permission denied")
     return {"detail": "User deleted successfully"}
+
+
+# -----------------------------
+# GDPR-style data export (basic)
+# -----------------------------
+@router.get("/{user_id}/export", operation_id="export_user_data")
+async def export_user_data(user_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    if current_user.id != user_id and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    user = await get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # minimal export
+    return {
+        "user": {"id": user.id, "email": user.email, "phone": user.phone, "kyc_status": user.kyc_status},
+    }
 
 # -----------------------------
 # List / Search Users
