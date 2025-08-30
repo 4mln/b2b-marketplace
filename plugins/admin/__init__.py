@@ -1,28 +1,10 @@
-from fastapi import FastAPI, APIRouter
-from app.core.plugins.base import PluginBase, PluginConfig
+"""
+Admin Dashboard System Plugin
+Provides comprehensive administrative capabilities for the B2B marketplace
+"""
 
+from .routes import router
 
-class Config(PluginConfig):
-    pass
-
-
-class Plugin(PluginBase):
-    slug = "admin"
-    version = "0.1.0"
-    dependencies: list[str] = ["guilds", "products", "rfq", "ads"]
-    ConfigModel = Config
-
-    def __init__(self, config: Config | None = None):
-        super().__init__(config=config)
-        self.router = APIRouter()
-
-    def register_routes(self, app: FastAPI):
-        from plugins.admin.routes import router as admin_router
-        self.router.include_router(
-            admin_router,
-            prefix=f"/{self.slug}",
-            tags=["Admin"]
-        )
-        app.include_router(self.router)
+__all__ = ["router"]
 
 

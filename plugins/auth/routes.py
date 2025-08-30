@@ -1,16 +1,28 @@
 # plugins/auth/routes.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import timedelta
+from datetime import timedelta, datetime
+import random
+import os
+import shutil
+from typing import List
 
-from app.core.db import get_session  # async DB session dependency
-from plugins.user.security import get_current_user  # moved here for proper dependency
+from app.core.db import get_session
+from app.core.auth import get_current_user_sync as get_current_user
 from app.core.openapi import enhance_endpoint_docs
 from plugins.auth.docs import auth_docs
+from plugins.auth.schemas import (
+    UserCreate, UserOut, UserProfileOut, BusinessProfileUpdate, 
+    KYCVerificationRequest, KYCVerificationResponse, UserProfileChangeOut,
+    Token, OTPRequest, OTPVerify, PrivacySettings, NotificationPreferences
+)
+from plugins.auth.models import User, UserProfileChange
+from plugins.auth.jwt import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from plugins.user.crud import create_user, get_user_by_email
+from plugins.user.security import verify_password, get_password_hash
+from sqlalchemy import select, update
 from pydantic import BaseModel
-from datetime import datetime, timedelta
-import random
 
 router = APIRouter()
 
@@ -19,10 +31,6 @@ router = APIRouter()
 # -----------------------------
 @router.post("/signup", operation_id="signup")
 async def signup(user_in=Depends(), db: AsyncSession = Depends(get_session)):
-    # ✅ Local imports to avoid circular dependency
-    from plugins.auth.schemas import UserCreate, UserOut
-    from plugins.user.crud import create_user, get_user_by_email
-
     if not isinstance(user_in, UserCreate):
         user_in = UserCreate(**user_in.dict())
 
@@ -33,11 +41,12 @@ async def signup(user_in=Depends(), db: AsyncSession = Depends(get_session)):
     user_data = {
         "email": user_in.email,
         "full_name": user_in.full_name,
-        "password": user_in.password,  # hashing handled in User CRUD
+        "phone": user_in.phone,
+        "role": user_in.role,
+        "password": user_in.password,
     }
     new_user = await create_user(db, user_data)
     return UserOut.model_validate(new_user)
-
 
 # -----------------------------
 # Login endpoint (OAuth2 standard)
@@ -47,12 +56,6 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_session),
 ):
-    # ✅ Local imports
-    from plugins.auth.schemas import Token
-    from plugins.auth.jwt import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-    from plugins.user.crud import get_user_by_email
-    from plugins.user.security import verify_password
-
     user = await get_user_by_email(db, form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -60,34 +63,252 @@ async def login_for_access_token(
             detail="Invalid credentials",
         )
 
+    # Update last login
+    await db.execute(update(User).where(User.id == user.id).values(last_login=datetime.utcnow()))
+    await db.commit()
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return Token(access_token=access_token, token_type="bearer")
 
-
 # -----------------------------
 # Get current user
 # -----------------------------
 @router.get("/me", operation_id="read_current_user")
 async def read_current_user(current_user=Depends(get_current_user)):
-    # ✅ Local imports
-    from plugins.auth.schemas import UserOut
-
     return UserOut.model_validate(current_user)
 
+# -----------------------------
+# Get complete user profile
+# -----------------------------
+@router.get("/me/profile", response_model=UserProfileOut, operation_id="read_user_profile")
+async def read_user_profile(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    return UserProfileOut.model_validate(current_user)
+
+# -----------------------------
+# Update user profile
+# -----------------------------
+@router.patch("/me/profile", response_model=UserProfileOut, operation_id="update_user_profile")
+async def update_user_profile(
+    profile_update: BusinessProfileUpdate,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+    request: Request = None
+):
+    # Calculate profile completion percentage
+    completion_fields = [
+        'business_name', 'business_type', 'business_industry', 'business_description',
+        'business_phones', 'business_emails', 'website', 'business_addresses', 'bank_accounts'
+    ]
+    
+    completed_fields = 0
+    update_data = {}
+    
+    for field in completion_fields:
+        if hasattr(profile_update, field) and getattr(profile_update, field) is not None:
+            update_data[field] = getattr(profile_update, field)
+            completed_fields += 1
+    
+    # Calculate completion percentage
+    completion_percentage = min(100, int((completed_fields / len(completion_fields)) * 100))
+    update_data['profile_completion_percentage'] = completion_percentage
+    update_data['updated_at'] = datetime.utcnow()
+    
+    # Update user profile
+    await db.execute(update(User).where(User.id == current_user.id).values(**update_data))
+    await db.commit()
+    await db.refresh(current_user)
+    
+    # Log profile change for audit trail
+    if request:
+        for field, value in update_data.items():
+            if field != 'updated_at' and field != 'profile_completion_percentage':
+                old_value = getattr(current_user, field, None)
+                change = UserProfileChange(
+                    user_id=current_user.id,
+                    changed_by=current_user.id,
+                    field_name=field,
+                    old_value=str(old_value) if old_value is not None else None,
+                    new_value=str(value) if value is not None else None,
+                    change_type="update",
+                    ip_address=request.client.host if request.client else None,
+                    user_agent=request.headers.get("user-agent")
+                )
+                db.add(change)
+        
+        await db.commit()
+    
+    return UserProfileOut.model_validate(current_user)
+
+# -----------------------------
+# Upload business photo
+# -----------------------------
+@router.post("/me/profile/photo", operation_id="upload_business_photo")
+async def upload_business_photo(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Create uploads directory if it doesn't exist
+    upload_dir = "uploads/business_photos"
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = file.filename.split('.')[-1]
+    filename = f"business_photo_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+    file_path = os.path.join(upload_dir, filename)
+    
+    # Save file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Update user profile
+    await db.execute(
+        update(User).where(User.id == current_user.id).values(business_photo=file_path)
+    )
+    await db.commit()
+    
+    return {"detail": "Business photo uploaded successfully", "file_path": file_path}
+
+# -----------------------------
+# Upload banner photo
+# -----------------------------
+@router.post("/me/profile/banner", operation_id="upload_banner_photo")
+async def upload_banner_photo(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Create uploads directory if it doesn't exist
+    upload_dir = "uploads/banner_photos"
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = file.filename.split('.')[-1]
+    filename = f"banner_photo_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.{file_extension}"
+    file_path = os.path.join(upload_dir, filename)
+    
+    # Save file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Update user profile
+    await db.execute(
+        update(User).where(User.id == current_user.id).values(banner_photo=file_path)
+    )
+    await db.commit()
+    
+    return {"detail": "Banner photo uploaded successfully", "file_path": file_path}
+
+# -----------------------------
+# KYC Verification
+# -----------------------------
+@router.post("/me/kyc/verify", response_model=KYCVerificationResponse, operation_id="kyc_verification")
+async def kyc_verification(
+    kyc_data: KYCVerificationRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    # Check if user has completed OTP verification
+    if current_user.kyc_status == "pending":
+        raise HTTPException(status_code=400, detail="Please complete OTP verification first")
+    
+    # Update user with KYC data
+    update_data = {
+        "business_name": kyc_data.business_name,
+        "business_registration_number": kyc_data.business_registration_number,
+        "business_tax_id": kyc_data.business_tax_id,
+        "business_type": kyc_data.business_type,
+        "business_industry": kyc_data.business_industry,
+        "business_description": kyc_data.business_description,
+        "business_phones": kyc_data.business_phones,
+        "business_emails": kyc_data.business_emails,
+        "business_addresses": [addr.dict() for addr in kyc_data.business_addresses],
+        "bank_accounts": [acc.dict() for acc in kyc_data.bank_accounts],
+        "kyc_status": "business_verified",
+        "kyc_verified_at": datetime.utcnow(),
+        "profile_completion_percentage": 100,
+        "updated_at": datetime.utcnow()
+    }
+    
+    await db.execute(update(User).where(User.id == current_user.id).values(**update_data))
+    await db.commit()
+    
+    return KYCVerificationResponse(
+        status="business_verified",
+        message="KYC verification submitted successfully. Your profile will be reviewed within 24-48 hours.",
+        estimated_processing_time="24-48 hours"
+    )
+
+# -----------------------------
+# Get profile change history
+# -----------------------------
+@router.get("/me/profile/changes", response_model=List[UserProfileChangeOut], operation_id="get_profile_changes")
+async def get_profile_changes(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+    limit: int = 50
+):
+    result = await db.execute(
+        select(UserProfileChange)
+        .where(UserProfileChange.user_id == current_user.id)
+        .order_by(UserProfileChange.created_at.desc())
+        .limit(limit)
+    )
+    changes = result.scalars().all()
+    return [UserProfileChangeOut.model_validate(change) for change in changes]
+
+# -----------------------------
+# Update privacy settings
+# -----------------------------
+@router.patch("/me/privacy", operation_id="update_privacy_settings")
+async def update_privacy_settings(
+    privacy_settings: PrivacySettings,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    await db.execute(
+        update(User).where(User.id == current_user.id).values(
+            privacy_settings=privacy_settings.dict(),
+            updated_at=datetime.utcnow()
+        )
+    )
+    await db.commit()
+    
+    return {"detail": "Privacy settings updated successfully"}
+
+# -----------------------------
+# Update notification preferences
+# -----------------------------
+@router.patch("/me/notifications", operation_id="update_notification_preferences")
+async def update_notification_preferences(
+    notification_preferences: NotificationPreferences,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    await db.execute(
+        update(User).where(User.id == current_user.id).values(
+            notification_preferences=notification_preferences.dict(),
+            updated_at=datetime.utcnow()
+        )
+    )
+    await db.commit()
+    
+    return {"detail": "Notification preferences updated successfully"}
 
 # -----------------------------
 # OTP-first: request code to phone (Iran provider stub)
 # -----------------------------
-class OTPRequest(BaseModel):
-    phone: str
-
-
 @router.post("/otp/request", operation_id="otp_request")
 async def otp_request(payload: OTPRequest, db: AsyncSession = Depends(get_session)):
-    from plugins.auth.models import User
     from sqlalchemy import select
     # Find or create minimal user by phone
     result = await db.execute(select(User).where(User.phone == payload.phone))
@@ -120,19 +341,11 @@ async def otp_request(payload: OTPRequest, db: AsyncSession = Depends(get_sessio
 
     return {"detail": "OTP sent"}
 
-
 # -----------------------------
 # OTP-first: verify code and issue token
 # -----------------------------
-class OTPVerify(BaseModel):
-    phone: str
-    code: str
-
-
 @router.post("/otp/verify", operation_id="otp_verify")
 async def otp_verify(payload: OTPVerify, db: AsyncSession = Depends(get_session)):
-    from plugins.auth.models import User
-    from plugins.auth.jwt import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
     from sqlalchemy import select
 
     result = await db.execute(select(User).where(User.phone == payload.phone))
@@ -146,6 +359,7 @@ async def otp_verify(payload: OTPVerify, db: AsyncSession = Depends(get_session)
     user.otp_code = None
     user.otp_expiry = None
     user.kyc_status = "otp_verified"
+    user.last_login = datetime.utcnow()
     await db.commit()
 
     access_token = create_access_token(

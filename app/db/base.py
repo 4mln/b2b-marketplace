@@ -1,5 +1,6 @@
 # app/db/base.py
-from sqlalchemy.orm import declarative_base
+# Import Base from core db to avoid duplication
+from app.core.db import Base
 
-# 1️⃣ Create the Base class
-Base = declarative_base()
+# Re-export for backward compatibility
+__all__ = ["Base"]

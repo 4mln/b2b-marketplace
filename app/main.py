@@ -30,7 +30,7 @@ setup_api_documentation(app)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["*"] if settings.DEBUG else ["https://yourdomain.com"],  # Environment-aware
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,6 +55,18 @@ redis = Redis.from_url(
 
 # Initialize API key manager
 api_key_manager = None
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "app_name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "environment": settings.ENVIRONMENT,
+        "debug": settings.DEBUG
+    }
 
 # Startup event: initialize services and load plugins
 @app.on_event("startup")

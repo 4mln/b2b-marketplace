@@ -8,7 +8,7 @@ class Config(PluginConfig):
     """Config schema for Auth plugin"""
     token_expire_minutes: int = 60
     enable_2fa: bool = False
-    secret_key: str = "supersecretkey"
+    secret_key: str = "your-secret-key-change-in-production"
     algorithm: str = "HS256"
 
 # -----------------------------

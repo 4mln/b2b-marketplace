@@ -1,5 +1,5 @@
-from fastapi.openapi.models import SecuritySchemeIn, SecurityScheme
-from fastapi import FastAPI
+from fastapi.openapi.models import SecurityScheme  # keep this
+from fastapi.openapi.constants import SecuritySchemeType
 
 def setup_api_documentation(app: FastAPI):
     """
