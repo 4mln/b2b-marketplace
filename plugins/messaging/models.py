@@ -97,3 +97,5 @@ class ChatInvitation(Base):
     chat_room = relationship("ChatRoom")
     inviter = relationship("User", foreign_keys=[invited_by])
     invited_user = relationship("User", foreign_keys=[invited_user_id])
+
+

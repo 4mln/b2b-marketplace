@@ -363,3 +363,5 @@ def downgrade() -> None:
     
     ad_type_enum = postgresql.ENUM('banner', 'popup', 'sidebar', 'in_feed', 'search_result', 'product_page', 'category_page', 'homepage', name='ad_type_enum')
     ad_type_enum.drop(op.get_bind())
+
+

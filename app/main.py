@@ -23,7 +23,6 @@ app = FastAPI(
     docs_url="/api/docs",  # Swagger UI
     redoc_url="/api/redoc"  # ReDoc UI
 )
-
 # Configure API documentation
 setup_api_documentation(app)
 
@@ -53,6 +52,15 @@ redis = Redis.from_url(
     max_connections=20
 )
 
+# Setup security middlewares
+setup_security_middleware(app)
+setup_logging_middleware(app)
+setup_ip_security(app, redis)
+setup_middleware(app, redis)  # Rate limiting
+
+global api_key_manager
+api_key_manager = setup_api_key_management(app, redis)
+
 # Initialize API key manager
 api_key_manager = None
 
@@ -67,18 +75,9 @@ async def health_check():
         "environment": settings.ENVIRONMENT,
         "debug": settings.DEBUG
     }
-
 # Startup event: initialize services and load plugins
 @app.on_event("startup")
 async def startup_event():
-    global api_key_manager
-    
-    # Setup security middlewares
-    setup_security_middleware(app)
-    setup_logging_middleware(app)
-    setup_ip_security(app, redis)
-    setup_middleware(app, redis)  # Rate limiting
-    api_key_manager = setup_api_key_management(app, redis)
     
     # Load and initialize plugins
     try:

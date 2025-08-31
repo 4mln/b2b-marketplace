@@ -204,3 +204,5 @@ Index('idx_performance_metrics_session_type', MobilePerformanceMetric.session_id
 Index('idx_offline_queue_session_status', MobileOfflineQueue.session_id, MobileOfflineQueue.status)
 Index('idx_push_notifications_session_status', MobilePushNotification.session_id, MobilePushNotification.status)
 Index('idx_sync_states_session_entity', MobileSyncState.session_id, MobileSyncState.entity_type)
+
+

@@ -147,3 +147,5 @@ def downgrade() -> None:
     op.drop_table('payment_providers')
     op.drop_table('payment_refunds')
     op.drop_table('payments')
+
+

@@ -116,3 +116,5 @@ def get_current_user_optional_sync(
 
 # Import the sync database session function
 from app.db.session import get_db_sync
+
+

@@ -384,3 +384,5 @@ async def get_direct_chat(db: Session, user1_id: int, user2_id: int) -> Optional
     ).first()
     
     return chat_room
+
+

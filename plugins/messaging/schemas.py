@@ -187,3 +187,5 @@ class ReadReceipt(BaseModel):
     message_id: int
     user_id: int
     read_at: datetime
+
+

@@ -316,3 +316,5 @@ def downgrade():
     op.drop_index('idx_analytics_events_type', table_name='analytics_events')
     op.drop_index(op.f('ix_analytics_events_id'), table_name='analytics_events')
     op.drop_table('analytics_events')
+
+

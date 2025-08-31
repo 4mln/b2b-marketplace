@@ -392,3 +392,5 @@ def downgrade() -> None:
     
     admin_role_enum = postgresql.ENUM('super_admin', 'admin', 'moderator', 'support', 'analyst', name='admin_role_enum')
     admin_role_enum.drop(op.get_bind())
+
+

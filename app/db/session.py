@@ -35,3 +35,5 @@ def get_db_sync() -> Session:
 
 # Alias for backward compatibility
 get_db = get_db_sync
+
+

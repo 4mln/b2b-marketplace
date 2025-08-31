@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException, Security
-from fastapi.security.api_key import APIKeyHeader
 from starlette.middleware.base import BaseHTTPMiddleware
 from redis.asyncio import Redis
+from fastapi.security.api_key import APIKeyHeader
 from datetime import datetime, timedelta
 import secrets
 import json
@@ -9,7 +9,8 @@ import json
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key")
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
-    def __init__(self, redis: Redis):
+    def __init__(self, app, redis: Redis):
+        super().__init__(app)  # Pass app to BaseHTTPMiddleware
         self.redis = redis
     
     async def get_api_key_info(self, api_key: str) -> dict:

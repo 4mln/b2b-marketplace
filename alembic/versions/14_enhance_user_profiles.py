@@ -112,3 +112,5 @@ def downgrade() -> None:
     op.drop_column('users', 'business_tax_id')
     op.drop_column('users', 'business_registration_number')
     op.drop_column('users', 'business_name')
+
+

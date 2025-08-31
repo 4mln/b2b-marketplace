@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 import ipaddress
 
 class IPSecurityMiddleware(BaseHTTPMiddleware):
-    def __init__(self, redis: Redis, block_threshold: int = 10, block_duration: int = 3600):
+    def __init__(self, app, redis: Redis, block_threshold: int = 10, block_duration: int = 3600):
+        super().__init__(app)
         self.redis = redis
         self.block_threshold = block_threshold  # Number of suspicious activities before blocking
         self.block_duration = block_duration    # Block duration in seconds

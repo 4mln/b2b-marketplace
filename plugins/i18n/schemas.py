@@ -318,3 +318,5 @@ class SystemLocaleConfig(BaseModel):
     supported_languages: List[str] = ["fa", "en", "ar"]
     supported_currencies: List[str] = ["IRR", "USD", "EUR"]
     rtl_languages: List[str] = ["fa", "ar"]
+
+

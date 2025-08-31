@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Request, HTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
 from app.core.config import settings
 import time
 
-class RateLimitMiddleware:
-    def __init__(self, redis: Redis):
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, redis: Redis):
+        super().__init__(app)
         self.redis = redis
         self.window = settings.RATE_LIMIT_WINDOW_SECONDS
         self.max_requests = settings.RATE_LIMIT_MAX_REQUESTS
@@ -27,7 +29,7 @@ class RateLimitMiddleware:
 
         return requests_count <= self.max_requests
 
-    async def __call__(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next):
         # Skip rate limiting for non-API routes
         if not request.url.path.startswith("/api/"):
             return await call_next(request)
@@ -46,11 +48,11 @@ class RateLimitMiddleware:
         return await call_next(request)
 
 
-class LocaleMiddleware:
-    def __init__(self) -> None:
-        pass
+class LocaleMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app: FastAPI):
+        super().__init__(app)
 
-    async def __call__(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next):
         accept_language = request.headers.get("Accept-Language", "")
         locale = "fa" if "fa" in accept_language.lower() else "en"
         direction = "rtl" if locale == "fa" else "ltr"

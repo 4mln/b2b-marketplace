@@ -228,3 +228,5 @@ def downgrade():
     # Drop enums
     op.execute("DROP TYPE search_index_status_enum")
     op.execute("DROP TYPE search_index_type_enum")
+
+

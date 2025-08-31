@@ -242,3 +242,5 @@ def downgrade():
     op.drop_index('idx_mobile_sessions_session_id', table_name='mobile_app_sessions')
     op.drop_index(op.f('ix_mobile_app_sessions_id'), table_name='mobile_app_sessions')
     op.drop_table('mobile_app_sessions')
+
+

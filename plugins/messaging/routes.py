@@ -525,3 +525,5 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             await manager.send_personal_message(f"You wrote: {data}", user_id)
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
+
+

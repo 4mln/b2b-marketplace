@@ -246,3 +246,5 @@ def downgrade():
     op.drop_index('idx_notifications_user_status', table_name='notifications')
     op.drop_index(op.f('ix_notifications_id'), table_name='notifications')
     op.drop_table('notifications')
+
+

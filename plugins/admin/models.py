@@ -350,3 +350,5 @@ class AdminReport(Base):
     
     # Relationships
     admin_user = relationship("AdminUser")
+
+

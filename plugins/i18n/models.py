@@ -140,3 +140,5 @@ class UserDateFormatPreference(Base):
     # Relationships
     user = relationship("User")
     date_format = relationship("DateFormat")
+
+

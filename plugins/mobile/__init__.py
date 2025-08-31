@@ -70,3 +70,5 @@ class Plugin(PluginBase):
             print(f"[{self.slug}] DB initialization completed (placeholder)")
 
 __all__ = ["Plugin", "Config", "router"]
+
+

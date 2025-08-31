@@ -61,3 +61,5 @@ def downgrade() -> None:
     
     # Recreate old subscription_type column
     op.add_column('sellers', sa.Column('subscription_type', sa.String(), nullable=False))
+
+
