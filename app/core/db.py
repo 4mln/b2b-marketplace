@@ -1,26 +1,30 @@
 # app/core/db.py
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-from app.core.config import settings
-
-# Async engine
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    future=True,
-    echo=True
+# Import all database components from app.db.session
+from app.db.base import Base
+from app.db.session import (
+    async_engine,
+    sync_engine,
+    AsyncSessionLocal,
+    SyncSessionLocal,
+    get_session,
+    get_db_sync,
+    get_db_sync_dependency,
+    get_db
 )
 
-# Async session factory
-AsyncSessionLocal = sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+# Re-export for backward compatibility
+__all__ = [
+    "Base", 
+    "async_engine", 
+    "engine",  # For backward compatibility
+    "sync_engine", 
+    "AsyncSessionLocal", 
+    "SyncSessionLocal", 
+    "get_session", 
+    "get_db_sync",
+    "get_db_sync_dependency",
+    "get_db"
+]
 
-# Base class for models (needed for Alembic autogenerate)
-Base = declarative_base()
-
-# Dependency to use in FastAPI routes
-async def get_session() -> AsyncSession:
-    async with AsyncSessionLocal() as session:
-        yield session
+# Alias async_engine as engine for backward compatibility
+engine = async_engine

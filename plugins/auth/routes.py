@@ -8,7 +8,7 @@ import os
 import shutil
 from typing import List
 
-from app.core.db import get_session
+from app.db.session import get_session
 from app.core.auth import get_current_user_sync as get_current_user
 from app.core.openapi import enhance_endpoint_docs
 from plugins.auth.docs import auth_docs

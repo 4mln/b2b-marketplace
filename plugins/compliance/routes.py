@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.db import get_session
-from .schemas import BannedItemCreate, BannedItemOut, AuditLogCreate, AuditLogOut
+from app.db.session import get_session
+from .schemas import BannedItemCreate, BannedItemOut, ComplianceAuditLogCreate, ComplianceAuditLogOut
 from . import crud
 
 
@@ -18,13 +18,19 @@ async def list_banned_items(db: AsyncSession = Depends(get_session)):
     return await crud.list_banned_items(db)
 
 
-@router.post("/audit", response_model=AuditLogOut)
-async def create_audit_log(payload: AuditLogCreate, db: AsyncSession = Depends(get_session)):
+@router.post("/audit", response_model=ComplianceAuditLogOut)
+async def create_audit_log(payload: ComplianceAuditLogCreate, db: AsyncSession = Depends(get_session)):
     return await crud.write_audit_log(db, payload)
 
 
-@router.get("/audit", response_model=list[AuditLogOut])
+@router.get("/audit", response_model=list[ComplianceAuditLogOut])
 async def list_audit_log(db: AsyncSession = Depends(get_session)):
     return await crud.list_audit_logs(db)
+
+
+
+
+
+
 
 

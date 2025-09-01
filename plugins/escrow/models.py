@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, fun
 from sqlalchemy.orm import declarative_base
 
 
-Base = declarative_base()
+from app.db.base import Base
 
 
 class Escrow(Base):
@@ -14,5 +14,11 @@ class Escrow(Base):
     currency = Column(String, default="IRR")
     status = Column(String, default="held")  # held, released, refunded
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+
+
+
+
 
 

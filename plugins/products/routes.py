@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
-from app.core.db import get_session
+from app.db.session import get_session
+from app.db.session import get_db_sync
 from plugins.products.schemas import ProductCreate, ProductUpdate, ProductOut
 from plugins.products.crud import (
     create_product,

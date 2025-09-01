@@ -30,3 +30,9 @@ def downgrade() -> None:
     op.drop_table('saved_searches')
 
 
+
+
+
+
+
+

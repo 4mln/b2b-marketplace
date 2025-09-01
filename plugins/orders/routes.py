@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from plugins.orders.schemas import OrderCreate, OrderUpdate, OrderOut
 from plugins.orders.crud import create_order, get_order, update_order, delete_order, list_orders
-from app.core.db import get_session
+from app.db.session import get_session
 from plugins.user.models import User
 from plugins.user.security import get_current_user
 from plugins.products.dependencies import enforce_product_limit

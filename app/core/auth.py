@@ -10,7 +10,6 @@ from typing import Optional
 import jwt
 from datetime import datetime, timedelta
 
-from app.core.db import get_session
 from app.core.config import settings
 from plugins.auth.models import User
 from plugins.auth.jwt import verify_token
@@ -114,7 +113,7 @@ def get_current_user_optional_sync(
     except HTTPException:
         return None
 
-# Import the sync database session function
-from app.db.session import get_db_sync
+# Import database session functions directly to avoid circular imports
+from app.db.session import get_db_sync, get_session
 
 

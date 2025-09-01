@@ -1,6 +1,7 @@
 # plugins/user/__init__.py
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
+import builtins
 
 
 class Config(PluginConfig):

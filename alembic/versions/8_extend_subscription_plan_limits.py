@@ -28,3 +28,9 @@ def downgrade() -> None:
     op.drop_column('subscription_plans', 'max_products')
 
 
+
+
+
+
+
+

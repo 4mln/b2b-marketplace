@@ -46,3 +46,4 @@ async def delete_guild(db: AsyncSession, guild_id: int) -> bool:
     return True
 
 
+

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import json
 import time
 
-from app.db.session import get_db
+from app.db.session import get_db, get_db_sync
 from app.core.auth import get_current_user_sync as get_current_user, get_current_user_optional_sync as get_current_user_optional
 from plugins.auth.models import User
 from . import crud

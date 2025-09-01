@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, func
 from sqlalchemy.orm import declarative_base
 
 
-Base = declarative_base()  # or import centralized Base
+from app.db.base import Base
 
 
 class Guild(Base):
@@ -14,5 +14,6 @@ class Guild(Base):
     description = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 
 

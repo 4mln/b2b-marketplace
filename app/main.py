@@ -14,6 +14,30 @@ from app.core.docs import setup_api_documentation
 from app.core.security_docs import apply_security_requirements, add_security_examples
 from fastapi.responses import JSONResponse
 from fastapi import Request
+from contextlib import asynccontextmanager
+
+# Lifespan context manager for startup and shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: initialize services and load plugins
+    try:
+        loader = PluginLoader()
+        await loader.load_all(app, engine)
+        if settings.ENABLE_PLUGIN_HOT_RELOAD:
+            loader.enable_hot_reload(app, engine)
+            
+        # Apply security documentation after plugins are loaded
+        apply_security_requirements(app)
+        add_security_examples(app)
+    except Exception as e:
+        print(f"Error loading plugins: {e}")
+        raise
+        
+    yield  # This is where the app runs
+    
+    # Shutdown: cleanup connections
+    await engine.dispose()
+    await redis.close()
 
 # Initialize FastAPI app with metadata
 app = FastAPI(
@@ -21,7 +45,8 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="A secure and scalable B2B marketplace platform",
     docs_url="/api/docs",  # Swagger UI
-    redoc_url="/api/redoc"  # ReDoc UI
+    redoc_url="/api/redoc",  # ReDoc UI
+    lifespan=lifespan
 )
 # Configure API documentation
 setup_api_documentation(app)
@@ -35,14 +60,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create async database engine
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=True,
-    pool_pre_ping=True,
-    pool_size=20,
-    max_overflow=10
-)
+# Import engine from session to avoid duplication
+from app.db.session import async_engine as engine
 
 # Create Redis connection
 redis = Redis.from_url(
@@ -58,11 +77,9 @@ setup_logging_middleware(app)
 setup_ip_security(app, redis)
 setup_middleware(app, redis)  # Rate limiting
 
+# Initialize API key manager
 global api_key_manager
 api_key_manager = setup_api_key_management(app, redis)
-
-# Initialize API key manager
-api_key_manager = None
 
 # Health check endpoint
 @app.get("/health")
@@ -75,29 +92,7 @@ async def health_check():
         "environment": settings.ENVIRONMENT,
         "debug": settings.DEBUG
     }
-# Startup event: initialize services and load plugins
-@app.on_event("startup")
-async def startup_event():
-    
-    # Load and initialize plugins
-    try:
-        loader = PluginLoader()
-        await loader.load_all(app, engine)
-        if settings.ENABLE_PLUGIN_HOT_RELOAD:
-            loader.enable_hot_reload(app, engine)
-            
-        # Apply security documentation after plugins are loaded
-        apply_security_requirements(app)
-        add_security_examples(app)
-    except Exception as e:
-        print(f"Error loading plugins: {e}")
-        raise
-
-# Shutdown event: cleanup connections
-@app.on_event("shutdown")
-async def shutdown_event():
-    await engine.dispose()
-    await redis.close()
+# Engine and Redis variables are defined here for use in the lifespan context manager
 
 
 @app.get("/manifest.json")

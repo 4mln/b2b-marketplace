@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from app.core.db import get_session
+from app.db.session import get_session
 from plugins.pricing.schemas import Price, PriceResponse
 
 router = APIRouter()

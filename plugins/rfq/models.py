@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, fun
 from sqlalchemy.orm import declarative_base, relationship
 
 
-Base = declarative_base()
+from app.db.base import Base
 
 
 class RFQ(Base):
@@ -38,5 +38,11 @@ class Quote(Base):
 
     rfq = relationship("RFQ")
     seller = relationship("User")
+
+
+
+
+
+
 
 

@@ -1,1 +1,3 @@
-from .main import plugin
+from .main import WalletPlugin as Plugin
+
+__all__ = ["Plugin"]

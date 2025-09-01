@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
 
-from app.db.session import get_db
+from app.db.session import get_db_sync  # Or get_db if async
 from app.core.auth import get_current_user_sync as get_current_user
 from plugins.auth.models import User
 from plugins.seller.crud import get_seller_by_user_id
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/ads", tags=["advertising"])
 @router.post("/", response_model=schemas.AdOut)
 def create_ad(
     ad_data: schemas.AdCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new advertisement"""
@@ -48,7 +48,7 @@ def get_my_ads(
     limit: int = Query(100, ge=1, le=1000),
     status: Optional[AdStatus] = None,
     ad_type: Optional[AdType] = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get current user's advertisements"""
@@ -68,7 +68,7 @@ def get_my_ads(
 @router.get("/{ad_id}", response_model=schemas.AdOut)
 def get_ad(
     ad_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get advertisement by ID"""
@@ -88,7 +88,7 @@ def get_ad(
 def update_ad(
     ad_id: int,
     ad_data: schemas.AdUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Update advertisement"""
@@ -120,7 +120,7 @@ def update_ad(
 @router.delete("/{ad_id}")
 def delete_ad(
     ad_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Delete advertisement"""
@@ -144,7 +144,7 @@ def delete_ad(
 @router.post("/campaigns", response_model=schemas.AdCampaignOut)
 def create_campaign(
     campaign_data: schemas.AdCampaignCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new ad campaign"""
@@ -160,7 +160,7 @@ def get_my_campaigns(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status: Optional[AdStatus] = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get current user's campaigns"""
@@ -180,7 +180,7 @@ def get_my_campaigns(
 @router.get("/campaigns/{campaign_id}", response_model=schemas.AdCampaignOut)
 def get_campaign(
     campaign_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get campaign by ID"""
@@ -200,7 +200,7 @@ def get_campaign(
 def update_campaign(
     campaign_id: int,
     campaign_data: schemas.AdCampaignUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Update campaign"""
@@ -226,7 +226,7 @@ def get_ad_analytics(
     ad_id: int,
     start_date: datetime = Query(default_factory=lambda: datetime.utcnow() - timedelta(days=30)),
     end_date: datetime = Query(default_factory=lambda: datetime.utcnow()),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get analytics for an ad"""
@@ -247,7 +247,7 @@ def get_campaign_analytics(
     campaign_id: int,
     start_date: datetime = Query(default_factory=lambda: datetime.utcnow() - timedelta(days=30)),
     end_date: datetime = Query(default_factory=lambda: datetime.utcnow()),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get analytics for a campaign"""
@@ -271,7 +271,7 @@ def get_campaign_analytics(
 def get_ad_performance_summary(
     start_date: datetime = Query(default_factory=lambda: datetime.utcnow() - timedelta(days=30)),
     end_date: datetime = Query(default_factory=lambda: datetime.utcnow()),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get overall ad performance summary for seller"""
@@ -290,7 +290,7 @@ def get_ad_performance_summary(
 @router.post("/targeting/validate", response_model=schemas.TargetingValidation)
 def validate_targeting_config(
     targeting_config: schemas.TargetingConfig,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Validate targeting configuration"""
@@ -301,7 +301,7 @@ def validate_targeting_config(
 @router.post("/auction", response_model=schemas.AuctionResponse)
 def run_auction(
     auction_request: schemas.AuctionRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_sync)
 ):
     """Run real-time auction for ad space"""
     return crud.run_auction(db, auction_request)
@@ -311,7 +311,7 @@ def run_auction(
 def record_impression(
     ad_id: int,
     impression_data: schemas.AdImpressionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_sync)
 ):
     """Record an ad impression"""
     ad = crud.get_ad(db, ad_id)
@@ -348,7 +348,7 @@ def record_impression(
 def record_click(
     ad_id: int,
     click_data: schemas.AdClickCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_sync)
 ):
     """Record an ad click"""
     ad = crud.get_ad(db, ad_id)
@@ -382,7 +382,7 @@ def record_click(
 def record_conversion(
     ad_id: int,
     conversion_data: schemas.AdConversionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_sync)
 ):
     """Record an ad conversion"""
     ad = crud.get_ad(db, ad_id)
@@ -406,7 +406,7 @@ def record_conversion(
 @router.post("/spaces", response_model=schemas.AdSpaceOut)
 def create_ad_space(
     space_data: schemas.AdSpaceCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new ad space (Admin only)"""
@@ -420,7 +420,7 @@ def create_ad_space(
 def get_ad_spaces(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_sync)
 ):
     """Get available ad spaces"""
     spaces, total = crud.get_ad_spaces(db, skip, limit)
@@ -434,7 +434,7 @@ def get_ad_spaces(
 def update_ad_space(
     space_id: int,
     space_data: schemas.AdSpaceUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Update ad space (Admin only)"""
@@ -452,7 +452,7 @@ def update_ad_space(
 @router.post("/blocklist", response_model=schemas.AdBlocklistOut)
 def add_to_blocklist(
     blocklist_data: schemas.AdBlocklistCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Add item to blocklist (Admin only)"""
@@ -467,7 +467,7 @@ def get_blocklist(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     block_type: Optional[str] = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get blocklist items (Admin only)"""
@@ -486,7 +486,7 @@ def get_blocklist(
 @router.delete("/blocklist/{blocklist_id}")
 def remove_from_blocklist(
     blocklist_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Remove item from blocklist (Admin only)"""
@@ -504,7 +504,7 @@ def remove_from_blocklist(
 @router.get("/{ad_id}/budget", response_model=schemas.BudgetSummary)
 def get_budget_summary(
     ad_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get budget summary for an ad"""
@@ -536,7 +536,7 @@ def get_budget_summary(
 @router.get("/{ad_id}/quality-score")
 def get_quality_score(
     ad_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get quality score for an ad"""
@@ -567,7 +567,7 @@ def get_quality_score(
 def approve_ad(
     ad_id: int,
     notes: Optional[str] = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Approve an advertisement (Admin only)"""
@@ -585,7 +585,7 @@ def approve_ad(
 def reject_ad(
     ad_id: int,
     reason: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Reject an advertisement (Admin only)"""
@@ -603,7 +603,7 @@ def reject_ad(
 def get_pending_ads(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get ads pending approval (Admin only)"""
@@ -621,5 +621,9 @@ def get_pending_ads(
         page=skip // limit + 1,
         page_size=limit
     )
+
+
+
+
 
 

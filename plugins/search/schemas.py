@@ -542,3 +542,9 @@ class SearchTrends(BaseModel):
     zero_result_rate: float
 
 
+
+
+
+
+
+

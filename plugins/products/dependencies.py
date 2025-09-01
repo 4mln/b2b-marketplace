@@ -2,7 +2,7 @@
 from fastapi import HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from app.core.db import get_session
+from app.db.session import get_session
 from plugins.subscriptions.crud import check_plan_limits
 from plugins.products.models import Product
 

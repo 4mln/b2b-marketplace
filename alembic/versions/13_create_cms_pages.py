@@ -32,3 +32,9 @@ def downgrade() -> None:
     op.drop_table('cms_pages')
 
 
+
+
+
+
+
+

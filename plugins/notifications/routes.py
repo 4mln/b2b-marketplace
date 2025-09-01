@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import json
 import asyncio
 
-from app.db.session import get_db
+from app.db.session import get_db_sync  # Or get_db if async
 from app.core.auth import get_current_user_sync as get_current_user, get_current_user_optional_sync as get_current_user_optional
 from plugins.auth.models import User
 from . import crud, schemas
@@ -77,7 +77,7 @@ def get_user_notifications(
     status: Optional[NotificationStatus] = None,
     notification_type: Optional[NotificationType] = None,
     unread_only: bool = Query(False),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get user notifications"""
@@ -103,7 +103,7 @@ def get_user_notifications(
 @router.get("/{notification_id}", response_model=schemas.NotificationOut)
 def get_notification(
     notification_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get specific notification"""
@@ -117,7 +117,7 @@ def get_notification(
 @router.post("/mark-read", response_model=schemas.NotificationMarkReadResponse)
 def mark_notifications_read(
     request: schemas.NotificationMarkReadRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Mark notifications as read"""
@@ -127,7 +127,7 @@ def mark_notifications_read(
 @router.post("/mark-read/{notification_id}", response_model=schemas.NotificationOut)
 def mark_notification_read(
     notification_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Mark a single notification as read"""
@@ -140,7 +140,7 @@ def mark_notification_read(
 
 @router.post("/mark-all-read")
 def mark_all_notifications_read(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Mark all user notifications as read"""
@@ -151,7 +151,7 @@ def mark_all_notifications_read(
 @router.delete("/{notification_id}")
 def delete_notification(
     notification_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Delete a notification"""
@@ -170,7 +170,7 @@ def delete_notification(
 @router.post("/send", response_model=schemas.NotificationSendResponse)
 def send_notification(
     request: schemas.NotificationSendRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Send a notification to a user"""
@@ -184,7 +184,7 @@ def send_notification(
 @router.post("/send-bulk", response_model=List[schemas.NotificationSendResponse])
 def send_bulk_notifications(
     request: schemas.BulkNotificationRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Send notifications to multiple users"""
@@ -198,7 +198,7 @@ def send_bulk_notifications(
 # User Notification Preferences Routes
 @router.get("/preferences", response_model=schemas.NotificationPreferenceListResponse)
 def get_user_notification_preferences(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get user notification preferences"""
@@ -209,7 +209,7 @@ def get_user_notification_preferences(
 @router.get("/preferences/{notification_type}", response_model=schemas.UserNotificationPreferenceOut)
 def get_user_notification_preference(
     notification_type: NotificationType,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get specific notification preference"""
@@ -224,7 +224,7 @@ def get_user_notification_preference(
 def update_user_notification_preference(
     notification_type: NotificationType,
     preference_data: schemas.UserNotificationPreferenceUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Update user notification preference"""
@@ -239,7 +239,7 @@ def update_user_notification_preference(
 def create_user_notification_preference(
     notification_type: NotificationType,
     preference_data: schemas.UserNotificationPreferenceUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Create user notification preference"""
@@ -260,7 +260,7 @@ def create_user_notification_preference(
 @router.delete("/preferences/{notification_type}")
 def delete_user_notification_preference(
     notification_type: NotificationType,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Delete user notification preference"""
@@ -274,7 +274,7 @@ def delete_user_notification_preference(
 # Notification Subscriptions Routes
 @router.get("/subscriptions", response_model=schemas.NotificationSubscriptionListResponse)
 def get_user_notification_subscriptions(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get user notification subscriptions"""
@@ -285,7 +285,7 @@ def get_user_notification_subscriptions(
 @router.post("/subscriptions", response_model=schemas.NotificationSubscriptionOut)
 def create_notification_subscription(
     subscription_data: schemas.NotificationSubscriptionCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Create notification subscription"""
@@ -297,7 +297,7 @@ def create_notification_subscription(
 def update_notification_subscription(
     subscription_id: int,
     subscription_data: schemas.NotificationSubscriptionUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Update notification subscription"""
@@ -311,7 +311,7 @@ def update_notification_subscription(
 @router.delete("/subscriptions/{subscription_id}")
 def delete_notification_subscription(
     subscription_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Delete notification subscription"""
@@ -326,7 +326,7 @@ def delete_notification_subscription(
 @router.post("/templates", response_model=schemas.NotificationTemplateOut)
 def create_notification_template(
     template_data: schemas.NotificationTemplateCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Create notification template"""
@@ -343,7 +343,7 @@ def get_notification_templates(
     notification_type: Optional[NotificationType] = None,
     language: Optional[str] = None,
     is_active: Optional[bool] = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification templates"""
@@ -370,7 +370,7 @@ def get_notification_templates(
 @router.get("/templates/{template_id}", response_model=schemas.NotificationTemplateOut)
 def get_notification_template(
     template_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification template by ID"""
@@ -388,7 +388,7 @@ def get_notification_template(
 def update_notification_template(
     template_id: int,
     template_data: schemas.NotificationTemplateUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Update notification template"""
@@ -405,7 +405,7 @@ def update_notification_template(
 @router.delete("/templates/{template_id}")
 def delete_notification_template(
     template_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Delete notification template"""
@@ -423,7 +423,7 @@ def delete_notification_template(
 def render_notification_template(
     template_id: int,
     render_request: schemas.NotificationTemplateRenderRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Render notification template with variables"""
@@ -440,7 +440,7 @@ def render_notification_template(
 @router.post("/batches", response_model=schemas.NotificationBatchOut)
 def create_notification_batch(
     batch_data: schemas.NotificationBatchCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Create notification batch"""
@@ -455,7 +455,7 @@ def get_notification_batches(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status: Optional[str] = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification batches"""
@@ -480,7 +480,7 @@ def get_notification_batches(
 @router.get("/batches/{batch_id}", response_model=schemas.NotificationBatchOut)
 def get_notification_batch(
     batch_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification batch by ID"""
@@ -498,7 +498,7 @@ def get_notification_batch(
 def update_notification_batch(
     batch_id: int,
     batch_data: schemas.NotificationBatchUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Update notification batch"""
@@ -515,7 +515,7 @@ def update_notification_batch(
 @router.post("/batches/{batch_id}/process")
 def process_notification_batch(
     batch_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Process notification batch"""
@@ -533,7 +533,7 @@ def process_notification_batch(
 @router.post("/webhooks", response_model=schemas.NotificationWebhookOut)
 def create_notification_webhook(
     webhook_data: schemas.NotificationWebhookCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Create notification webhook"""
@@ -548,7 +548,7 @@ def get_notification_webhooks(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     is_active: Optional[bool] = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification webhooks"""
@@ -573,7 +573,7 @@ def get_notification_webhooks(
 @router.get("/webhooks/{webhook_id}", response_model=schemas.NotificationWebhookOut)
 def get_notification_webhook(
     webhook_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification webhook by ID"""
@@ -591,7 +591,7 @@ def get_notification_webhook(
 def update_notification_webhook(
     webhook_id: int,
     webhook_data: schemas.NotificationWebhookUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Update notification webhook"""
@@ -608,7 +608,7 @@ def update_notification_webhook(
 @router.delete("/webhooks/{webhook_id}")
 def delete_notification_webhook(
     webhook_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Delete notification webhook"""
@@ -629,7 +629,7 @@ def get_notification_analytics(
     end_date: datetime = Query(default_factory=lambda: datetime.utcnow()),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification analytics"""
@@ -656,7 +656,7 @@ def get_notification_analytics(
 def get_notification_analytics_summary(
     start_date: datetime = Query(default_factory=lambda: datetime.utcnow() - timedelta(days=30)),
     end_date: datetime = Query(default_factory=lambda: datetime.utcnow()),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification analytics summary"""
@@ -668,7 +668,7 @@ def get_notification_analytics_summary(
 
 @router.get("/analytics/performance", response_model=schemas.NotificationPerformanceMetrics)
 def get_notification_performance_metrics(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification performance metrics"""
@@ -681,7 +681,7 @@ def get_notification_performance_metrics(
 @router.get("/analytics/trends", response_model=List[schemas.NotificationTrends])
 def get_notification_trends(
     days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification trends over time"""
@@ -695,7 +695,7 @@ def get_notification_trends(
 @router.post("/cleanup")
 def cleanup_old_notifications(
     days: int = Query(90, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Clean up old notifications"""
@@ -708,7 +708,7 @@ def cleanup_old_notifications(
 
 @router.get("/stats")
 def get_notification_stats(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     """Get notification statistics for current user"""

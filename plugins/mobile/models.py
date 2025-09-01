@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
 
-from ...database import Base
+from app.db.base import Base
 
 
 class MobileAppSession(Base):

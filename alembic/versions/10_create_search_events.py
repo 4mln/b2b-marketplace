@@ -29,3 +29,9 @@ def downgrade() -> None:
     op.drop_table('search_events')
 
 
+
+
+
+
+
+

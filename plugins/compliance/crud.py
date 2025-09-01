@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from .models import BannedItem, AuditLog
-from .schemas import BannedItemCreate, AuditLogCreate
+from .models import BannedItem, ComplianceAuditLog
+from .schemas import BannedItemCreate, ComplianceAuditLogCreate
 
 
 async def add_banned_item(db: AsyncSession, data: BannedItemCreate) -> BannedItem:
@@ -17,16 +17,22 @@ async def list_banned_items(db: AsyncSession) -> list[BannedItem]:
     return result.scalars().all()
 
 
-async def write_audit_log(db: AsyncSession, data: AuditLogCreate) -> AuditLog:
-    log = AuditLog(**data.dict())
+async def write_audit_log(db: AsyncSession, data: ComplianceAuditLogCreate) -> ComplianceAuditLog:
+    log = ComplianceAuditLog(**data.dict())
     db.add(log)
     await db.commit()
     await db.refresh(log)
     return log
 
 
-async def list_audit_logs(db: AsyncSession) -> list[AuditLog]:
-    result = await db.execute(select(AuditLog))
+async def list_audit_logs(db: AsyncSession) -> list[ComplianceAuditLog]:
+    result = await db.execute(select(ComplianceAuditLog))
     return result.scalars().all()
+
+
+
+
+
+
 
 

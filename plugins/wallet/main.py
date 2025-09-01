@@ -2,36 +2,37 @@ from fastapi import FastAPI, APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any
 
-from app.core.plugin import Plugin
-from .routes import router as wallet_router
+from app.core.plugins.base import PluginBase as Plugin
 
 class WalletPlugin(Plugin):
     """Wallet plugin for managing user wallets and transactions."""
     
-    def __init__(self):
-        super().__init__(
-            slug="wallet",
-            name="Wallet",
-            description="Manages user wallets, deposits, withdrawals, transfers, and cashback"
-        )
+    slug = "wallet"
+    name = "Wallet"
+    version = "0.1.0"
+    description = "Manages user wallets, deposits, withdrawals, transfers, and cashback"
     
-    def register_routes(self, app: FastAPI, prefix: str = "/api/v1") -> None:
+    def __init__(self, config=None):
+        super().__init__(config=config)
+    
+    def register_routes(self, app: FastAPI) -> None:
         """Register the wallet routes with the FastAPI application."""
-        api_router = APIRouter(prefix=f"{prefix}/wallet", tags=["wallet"])
-        api_router.include_router(wallet_router)
-        app.include_router(api_router)
+        from .routes import router as wallet_router  # Lazy import
+        self.router = APIRouter(prefix=f"/api/v1/wallet", tags=["wallet"])
+        self.router.include_router(wallet_router)
+        app.include_router(self.router)
     
-    async def init_db(self, db: AsyncSession) -> None:
+    async def init_db(self, engine) -> None:
         """Initialize any database tables or data needed for the wallet plugin."""
         # No initialization needed as tables are created by Alembic migrations
         pass
     
-    async def startup(self, app: FastAPI) -> None:
+    async def on_startup(self, app: FastAPI) -> None:
         """Perform any startup tasks for the wallet plugin."""
         # No startup tasks needed
         pass
     
-    async def shutdown(self) -> None:
+    async def on_shutdown(self, app: FastAPI) -> None:
         """Perform any cleanup tasks for the wallet plugin."""
         # No cleanup tasks needed
         pass

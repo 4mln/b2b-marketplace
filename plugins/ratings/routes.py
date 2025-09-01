@@ -24,3 +24,9 @@ async def list_ratings_for_user_endpoint(user_id: int, db: AsyncSession = Depend
     return await crud.list_ratings_for_user(db, user_id)
 
 
+
+
+
+
+
+

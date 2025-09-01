@@ -689,3 +689,9 @@ def calculate_quality_score(db: Session, ad_id: int) -> float:
     return max(0.0, min(10.0, score))
 
 
+
+
+
+
+
+

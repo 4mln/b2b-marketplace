@@ -13,7 +13,11 @@ if config.config_file_name is not None:
 
 # Import your SQLAlchemy models Base here
 from app.db.base import Base
-from plugins.seller.models import Seller  # optional, ensures model is imported
+# Import models to ensure they are registered with Base.metadata
+try:
+    from plugins.seller.models import Seller
+except ImportError:
+    pass  # Seller models might not exist yet
 target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:

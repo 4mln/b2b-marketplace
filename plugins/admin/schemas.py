@@ -3,6 +3,7 @@ Admin Dashboard System Schemas
 Comprehensive administrative capabilities for the B2B marketplace
 """
 from pydantic import BaseModel, Field, validator
+from app.db.session import get_db_sync  # Or get_db if async
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum

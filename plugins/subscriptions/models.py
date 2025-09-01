@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Foreig
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
 
-Base = declarative_base()  # or import centralized Base
+from app.db.base import Base
 
 class SubscriptionPlan(Base):
     __tablename__ = "subscription_plans"

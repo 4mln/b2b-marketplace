@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
-from app.core.db import get_session
+from app.db.session import get_session
 from .crud import create_cart, get_cart_by_user, add_item_to_cart, remove_item_from_cart
 from .schemas import CartCreate, CartOut, CartItemCreate, CartItemOut
 

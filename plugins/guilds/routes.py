@@ -45,3 +45,4 @@ async def delete_guild_endpoint(guild_id: int, db: AsyncSession = Depends(get_se
     return {"detail": "Guild deleted"}
 
 
+

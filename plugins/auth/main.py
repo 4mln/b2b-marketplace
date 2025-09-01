@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from typing import Optional
 
-from app.core.db import get_session
+from app.db.session import get_session
 from app.core.config import settings
 from .models import User
 from .schemas import UserCreate, UserOut, TokenResponse

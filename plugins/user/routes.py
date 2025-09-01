@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
 from app.core.db import get_session
+from app.db.session import get_db_sync
 from plugins.user.schemas import UserCreate, UserUpdate, UserOut
 from plugins.user.crud import create_user, get_user, update_user, delete_user, list_users
 from plugins.user.security import get_current_user

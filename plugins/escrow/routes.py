@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.db import get_session
+from app.db.session import get_session, get_db_sync
 from sqlalchemy import select, update
 from .models import Escrow
-from plugins.wallet.integrations import process_marketplace_payment, process_marketplace_refund
-from plugins.orders.models import Order
+# Lazy imports to avoid circular dependencies during plugin discovery
+# from plugins.wallet.integrations import process_marketplace_payment, process_marketplace_refund
+# from plugins.orders.models import Order
 
 
 router = APIRouter()
@@ -12,6 +13,10 @@ router = APIRouter()
 
 @router.post("/hold")
 async def hold_escrow(order_id: int, amount: float, currency: str = "IRR", db: AsyncSession = Depends(get_session)):
+    # Lazy imports to avoid circular dependencies
+    from plugins.orders.models import Order
+    from plugins.wallet.integrations import process_marketplace_payment
+    
     # debit buyer wallet into platform escrow (integration)
     order = await db.get(Order, order_id)
     if not order:
@@ -38,6 +43,10 @@ async def release_escrow(escrow_id: int, db: AsyncSession = Depends(get_session)
 
 @router.post("/{escrow_id}/refund")
 async def refund_escrow(escrow_id: int, db: AsyncSession = Depends(get_session)):
+    # Lazy imports to avoid circular dependencies
+    from plugins.orders.models import Order
+    from plugins.wallet.integrations import process_marketplace_refund
+    
     e = await db.get(Escrow, escrow_id)
     if not e:
         raise HTTPException(status_code=404, detail="Not found")

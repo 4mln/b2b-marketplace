@@ -351,3 +351,9 @@ class AdAnalytics(Base):
     ad = relationship("Ad")
 
 
+
+
+
+
+
+

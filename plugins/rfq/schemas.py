@@ -34,3 +34,9 @@ class QuoteOut(QuoteCreate):
     updated_at: datetime
 
 
+
+
+
+
+
+

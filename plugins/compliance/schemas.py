@@ -11,14 +11,20 @@ class BannedItemOut(BannedItemCreate):
     created_at: datetime
 
 
-class AuditLogCreate(BaseModel):
+class ComplianceAuditLogCreate(BaseModel):
     actor: str
     action: str
     entity: str | None = None
 
 
-class AuditLogOut(AuditLogCreate):
+class ComplianceAuditLogOut(ComplianceAuditLogCreate):
     id: int
     created_at: datetime
+
+
+
+
+
+
 
 

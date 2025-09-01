@@ -12,3 +12,9 @@ async def get_locale(accept_language: str | None = Header(None)):
     return {"locale": "en", "rtl": False, "calendar": "gregorian", "currency": "USD"}
 
 
+
+
+
+
+
+

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base
 from plugins.orders.schemas import OrderStatus
 
-Base = declarative_base()  # or import from your app.core.db Base if centralized
+from app.db.base import Base
 
 class Order(Base):
     __tablename__ = "orders"

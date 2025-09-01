@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 from datetime import datetime
 
-from app.core.db import get_session
+from app.db.session import get_session
 from plugins.user.security import get_current_user
 from plugins.auth.models import User
 from plugins.payments.models import Payment, PaymentStatus, PaymentMethod, PaymentType

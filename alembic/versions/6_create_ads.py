@@ -46,3 +46,9 @@ def downgrade() -> None:
     op.drop_table('ad_campaigns')
 
 
+
+
+
+
+
+

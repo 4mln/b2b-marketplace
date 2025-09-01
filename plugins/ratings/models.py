@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, fun
 from sqlalchemy.orm import declarative_base, relationship
 
 
-Base = declarative_base()
+from app.db.base import Base
 
 
 class Rating(Base):
@@ -22,5 +22,11 @@ class Rating(Base):
     order = relationship("Order")
     rater = relationship("User", foreign_keys=[rater_id])
     ratee = relationship("User", foreign_keys=[ratee_id])
+
+
+
+
+
+
 
 

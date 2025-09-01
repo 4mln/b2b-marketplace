@@ -57,7 +57,7 @@ class Payment(Base):
     # Payment metadata
     description = Column(Text, nullable=True)
     reference_id = Column(String, nullable=True)  # Reference to order, subscription, etc.
-    metadata = Column(JSON, nullable=True)  # Additional payment metadata
+    payment_metadata = Column(JSON, nullable=True)  # Additional payment metadata
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

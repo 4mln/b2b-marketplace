@@ -16,9 +16,9 @@ class Plugin(PluginBase):
         self.router = APIRouter()
 
     def register_routes(self, app: FastAPI):
-        from plugins.products.routes import router as products_router
+        from . import routes  # Lazy import with relative path
         self.router.include_router(
-            products_router,
+            routes.router,
             prefix=f"/{self.slug}",
             tags=["Products"]
         )
@@ -34,5 +34,5 @@ class Plugin(PluginBase):
             print(f"[{self.slug}] plugin shutting down")
 
     async def init_db(self, engine):
-         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        # Tables are created by Alembic migrations
+        pass
