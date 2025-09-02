@@ -31,23 +31,37 @@ async def setup_test_db():
         from plugins.orders.models import Base as OrdersBase
         from plugins.products.models import Base as ProductsBase
         from plugins.user.models import Base as UserBase
+        from plugins.rfq.models import Base as RFQBase
+        from plugins.payments.models import Base as PaymentsBase
         
-        # Create tables
+        # Drop tables
         await conn.run_sync(OrdersBase.metadata.drop_all)
         await conn.run_sync(ProductsBase.metadata.drop_all)
         await conn.run_sync(UserBase.metadata.drop_all)
+        await conn.run_sync(RFQBase.metadata.drop_all)
+        await conn.run_sync(PaymentsBase.metadata.drop_all)
         
+        # Create tables
         await conn.run_sync(OrdersBase.metadata.create_all)
         await conn.run_sync(ProductsBase.metadata.create_all)
         await conn.run_sync(UserBase.metadata.create_all)
+        await conn.run_sync(RFQBase.metadata.create_all)
+        await conn.run_sync(PaymentsBase.metadata.create_all)
     
     yield
     
     # Clean up after tests
     async with test_engine.begin() as conn:
+        from plugins.orders.models import Base as OrdersBase
+        from plugins.products.models import Base as ProductsBase
+        from plugins.user.models import Base as UserBase
+        from plugins.rfq.models import Base as RFQBase
+        from plugins.payments.models import Base as PaymentsBase
         await conn.run_sync(OrdersBase.metadata.drop_all)
         await conn.run_sync(ProductsBase.metadata.drop_all)
         await conn.run_sync(UserBase.metadata.drop_all)
+        await conn.run_sync(RFQBase.metadata.drop_all)
+        await conn.run_sync(PaymentsBase.metadata.drop_all)
 
 
 @pytest.fixture
