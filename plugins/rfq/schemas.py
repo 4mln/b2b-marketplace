@@ -10,6 +10,8 @@ class RFQCreate(BaseModel):
     target_price: Optional[float] = None
     delivery: Optional[str] = None
     expiry: Optional[datetime] = None
+    visibility: Optional[str] = None  # public, private
+    invited_seller_ids: Optional[list[int]] = None
 
 
 class RFQOut(RFQCreate):

@@ -128,3 +128,16 @@ class PaymentWebhook(Base):
     processed_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class WithdrawalRequest(Base):
+    __tablename__ = "withdrawal_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    amount = Column(Float, nullable=False)
+    currency = Column(String, nullable=False, default="IRR")
+    bank_account = Column(JSON, nullable=False)
+    status = Column(String, nullable=False, default="pending")  # pending, approved, rejected, paid
+    reason = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

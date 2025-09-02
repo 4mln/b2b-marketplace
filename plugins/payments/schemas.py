@@ -155,6 +155,28 @@ class PaymentProviderStats(BaseModel):
     success_rate: float
 
 # -----------------------------
+# Withdrawal Schemas
+# -----------------------------
+class WithdrawalRequestCreate(BaseModel):
+    amount: float = Field(..., gt=0)
+    currency: str = Field("IRR")
+    bank_account: Dict[str, Any]
+    model_config = {"extra": "forbid"}
+
+class WithdrawalRequestOut(BaseModel):
+    id: int
+    user_id: int
+    amount: float
+    currency: str
+    bank_account: Dict[str, Any]
+    status: str
+    reason: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    model_config = {"from_attributes": True}
+
+# -----------------------------
 # Payment Refund Schemas
 # -----------------------------
 class PaymentRefundRequest(BaseModel):

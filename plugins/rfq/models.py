@@ -17,6 +17,8 @@ class RFQ(Base):
     delivery = Column(String, nullable=True)
     expiry = Column(DateTime(timezone=True), nullable=True)
     attachments = Column(JSON, nullable=True)
+    visibility = Column(String, nullable=True)  # public, private
+    invited_seller_ids = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

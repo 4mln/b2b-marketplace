@@ -3,7 +3,7 @@ from sqlalchemy import select, update, func
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 
-from .models import Payment, PaymentStatus, PaymentType, PaymentRefund, PaymentWebhook
+from .models import Payment, PaymentStatus, PaymentType, PaymentRefund, PaymentWebhook, WithdrawalRequest
 from .schemas import PaymentCreate, PaymentUpdate
 
 # -----------------------------
@@ -137,6 +137,35 @@ async def get_payment_statistics(
         "provider_statistics": provider_stats,
         "period_days": days
     }
+
+# -----------------------------
+# Withdrawal Requests
+# -----------------------------
+async def create_withdrawal_request(db: AsyncSession, user_id: int, amount: float, currency: str, bank_account: Dict[str, Any]) -> WithdrawalRequest:
+    req = WithdrawalRequest(user_id=user_id, amount=amount, currency=currency, bank_account=bank_account)
+    db.add(req)
+    await db.commit()
+    await db.refresh(req)
+    return req
+
+async def list_withdrawal_requests(db: AsyncSession, user_id: int | None = None) -> List[WithdrawalRequest]:
+    query = select(WithdrawalRequest)
+    if user_id:
+        query = query.where(WithdrawalRequest.user_id == user_id)
+    result = await db.execute(query.order_by(WithdrawalRequest.created_at.desc()))
+    return result.scalars().all()
+
+async def update_withdrawal_status(db: AsyncSession, request_id: int, status: str, reason: str | None = None) -> WithdrawalRequest | None:
+    req = await db.get(WithdrawalRequest, request_id)
+    if not req:
+        return None
+    req.status = status
+    if reason:
+        req.reason = reason
+    req.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(req)
+    return req
 
 # -----------------------------
 # Payment Callback Processing

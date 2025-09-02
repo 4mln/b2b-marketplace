@@ -10,11 +10,12 @@ from plugins.payments.models import Payment, PaymentStatus, PaymentMethod, Payme
 from plugins.payments.iran_providers import IranPaymentFactory, get_available_providers, calculate_payment_fees
 from plugins.payments.schemas import (
     PaymentCreate, PaymentOut, PaymentCallback, PaymentVerification,
-    WalletTopupRequest, PaymentProviderInfo
+    WalletTopupRequest, PaymentProviderInfo, WithdrawalRequestCreate, WithdrawalRequestOut
 )
 from plugins.payments.crud import (
     create_payment, get_payment, update_payment_status,
-    list_user_payments, process_payment_callback
+    list_user_payments, process_payment_callback,
+    create_withdrawal_request, list_withdrawal_requests, update_withdrawal_status
 )
 from plugins.wallet.crud import get_user_wallet_by_currency, deposit
 from sqlalchemy import select
@@ -395,3 +396,38 @@ async def get_payment_invoice_pdf(payment_id: int, current_user: User = Depends(
     pdf.save()
     buffer.seek(0)
     return Response(buffer.getvalue(), media_type="application/pdf")
+
+# -----------------------------
+# Withdrawal Requests
+# -----------------------------
+@router.post("/withdrawals", response_model=WithdrawalRequestOut)
+async def request_withdrawal(payload: WithdrawalRequestCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    # Basic compliance checks: ensure user has bank account IBAN/Sheba format if provided
+    if not payload.bank_account.get("iban") and not payload.bank_account.get("sheba"):
+        raise HTTPException(status_code=400, detail="Bank account must include IBAN/Sheba")
+    req = await create_withdrawal_request(db, current_user.id, payload.amount, payload.currency, payload.bank_account)
+    return req
+
+@router.get("/withdrawals", response_model=List[WithdrawalRequestOut])
+async def my_withdrawals(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    return await list_withdrawal_requests(db, current_user.id)
+
+# Admin endpoints would normally be under admin; include simple approval here for completeness
+@router.post("/withdrawals/{request_id}/approve", response_model=WithdrawalRequestOut)
+async def approve_withdrawal(request_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    # TODO: enforce admin RBAC; placeholder check
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    req = await update_withdrawal_status(db, request_id, "approved")
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return req
+
+@router.post("/withdrawals/{request_id}/reject", response_model=WithdrawalRequestOut)
+async def reject_withdrawal(request_id: int, reason: str | None = None, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    req = await update_withdrawal_status(db, request_id, "rejected", reason)
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return req

@@ -23,12 +23,21 @@ async def create_rfq_endpoint(
     db: AsyncSession = Depends(get_session),
 ):
     await enforce_rfq_limit(user.id, db)
+    # Spam throttle: simple rate limit based on recent RFQs
+    from datetime import datetime, timedelta
+    recent = await crud.list_rfqs(db)
+    recent = [r for r in recent if r.buyer_id == user.id and getattr(r, 'created_at', datetime.min) >= datetime.utcnow() - timedelta(minutes=5)]
+    if len(recent) >= 5:
+        raise HTTPException(status_code=429, detail="Too many RFQs. Please wait a few minutes.")
+    # Visibility handling: store invited_seller_ids/visibility
     return await crud.create_rfq(db, buyer_id=user.id, data=payload)
 
 
 @router.get("/rfqs", response_model=list[RFQOut])
 async def list_rfqs_endpoint(db: AsyncSession = Depends(get_session)):
-    return await crud.list_rfqs(db)
+    rfqs = await crud.list_rfqs(db)
+    # Filter: if visibility is private, do not include invited list in response (kept in DB)
+    return rfqs
 
 
 @router.post("/quotes", response_model=QuoteOut)

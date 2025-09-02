@@ -135,6 +135,35 @@ def upgrade() -> None:
     except Exception:
         pass
 
+    # Create withdrawal_requests table
+    try:
+        op.create_table(
+            'withdrawal_requests',
+            sa.Column('id', sa.Integer(), primary_key=True, nullable=False),
+            sa.Column('user_id', sa.Integer(), nullable=False),
+            sa.Column('amount', sa.Float(), nullable=False),
+            sa.Column('currency', sa.String(), nullable=False, server_default='IRR'),
+            sa.Column('bank_account', sa.JSON(), nullable=False),
+            sa.Column('status', sa.String(), nullable=False, server_default='pending'),
+            sa.Column('reason', sa.Text(), nullable=True),
+            sa.Column('created_at', sa.DateTime(), nullable=True),
+            sa.Column('updated_at', sa.DateTime(), nullable=True),
+        )
+        op.create_index('ix_withdrawals_user_id', 'withdrawal_requests', ['user_id'])
+        op.create_foreign_key('fk_withdrawals_user_id', 'withdrawal_requests', 'users', ['user_id'], ['id'])
+    except Exception:
+        pass
+
+    # Alter rfqs to add visibility and invited_seller_ids
+    try:
+        op.add_column('rfqs', sa.Column('visibility', sa.String(), nullable=True))
+    except Exception:
+        pass
+    try:
+        op.add_column('rfqs', sa.Column('invited_seller_ids', sa.JSON(), nullable=True))
+    except Exception:
+        pass
+
 
 def downgrade() -> None:
     # Drop foreign key constraints
@@ -171,6 +200,20 @@ def downgrade() -> None:
         op.drop_index('ix_user_sessions_created_at', table_name='user_sessions')
         op.drop_index('ix_user_sessions_user_id', table_name='user_sessions')
         op.drop_table('user_sessions')
+    except Exception:
+        pass
+    try:
+        op.drop_constraint('fk_withdrawals_user_id', 'withdrawal_requests', type_='foreignkey')
+        op.drop_index('ix_withdrawals_user_id', table_name='withdrawal_requests')
+        op.drop_table('withdrawal_requests')
+    except Exception:
+        pass
+    try:
+        op.drop_column('rfqs', 'invited_seller_ids')
+    except Exception:
+        pass
+    try:
+        op.drop_column('rfqs', 'visibility')
     except Exception:
         pass
 
