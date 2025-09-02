@@ -113,3 +113,26 @@ def auth_headers(test_user):
     
     access_token = create_access_token(data={"sub": test_user.email})
     return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest.fixture
+async def test_user_2(db_session):
+    """Create a second test user."""
+    from plugins.user.models import User
+    from plugins.user.security import get_password_hash
+    user = User(
+        email="seller@example.com",
+        hashed_password=get_password_hash("password123"),
+        is_active=True
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def auth_headers_user2(test_user_2):
+    from plugins.auth.jwt import create_access_token
+    access_token = create_access_token(data={"sub": test_user_2.email})
+    return {"Authorization": f"Bearer {access_token}"}
