@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 from datetime import datetime
@@ -18,6 +18,9 @@ from plugins.payments.crud import (
 )
 from plugins.wallet.crud import get_user_wallet_by_currency, deposit
 from sqlalchemy import select
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from io import BytesIO
 
 router = APIRouter()
 
@@ -349,3 +352,46 @@ def get_provider_merchant_id(provider_name: str) -> str:
 import os
 import logging
 logger = logging.getLogger(__name__)
+
+# -----------------------------
+# Invoice PDF
+# -----------------------------
+@router.get("/{payment_id}/invoice.pdf")
+async def get_payment_invoice_pdf(payment_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    payment = await get_payment(db, payment_id)
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if payment.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this invoice")
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    y = height - 50
+
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(50, y, "Invoice")
+    y -= 30
+
+    pdf.setFont("Helvetica", 10)
+    fields = [
+        ("Invoice ID", str(payment.id)),
+        ("Date", payment.created_at.strftime("%Y-%m-%d %H:%M") if payment.created_at else ""),
+        ("User ID", str(payment.user_id)),
+        ("Amount", f"{payment.amount} {payment.currency}"),
+        ("Status", str(payment.status)),
+        ("Method", str(payment.payment_method)),
+        ("Type", str(payment.payment_type)),
+        ("Reference", payment.reference_id or ""),
+        ("Description", payment.description or ""),
+    ]
+    for label, value in fields:
+        pdf.drawString(50, y, f"{label}: {value}")
+        y -= 18
+        if y < 100:
+            pdf.showPage(); y = height - 50
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+    return Response(buffer.getvalue(), media_type="application/pdf")

@@ -25,6 +25,7 @@ from plugins.user.security import verify_password, get_password_hash
 from sqlalchemy import select, update
 from pydantic import BaseModel
 import pyotp
+from plugins.auth.models import UserSession
 
 router = APIRouter()
 
@@ -69,11 +70,19 @@ async def login_for_access_token(
     await db.execute(update(User).where(User.id == user.id).values(last_login=datetime.utcnow()))
     await db.commit()
 
+    # Create session record
+    # Note: device info can be set via headers in a separate endpoint; minimal create here
+    from plugins.auth.models import UserSession
+    session = UserSession(user_id=user.id, user_agent="oauth2-password", ip_address=None)
+    db.add(session)
+    await db.commit()
+    await db.refresh(session)
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return Token(access_token=access_token, token_type="bearer")
+    return Token(access_token=access_token, token_type="bearer", session_id=session.id)
 
 # -----------------------------
 # Get current user
@@ -406,6 +415,46 @@ async def toggle_2fa(payload: TwoFAToggle, current_user=Depends(get_current_user
     await db.execute(update(User).where(User.id == current_user.id).values(two_factor_enabled=payload.enabled, updated_at=datetime.utcnow()))
     await db.commit()
     return {"detail": f"2FA {'enabled' if payload.enabled else 'disabled'}"}
+
+# -----------------------------
+# Sessions management
+# -----------------------------
+@router.get("/me/sessions", response_model=list[dict])
+async def list_sessions(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    result = await db.execute(select(UserSession).where(UserSession.user_id == current_user.id).order_by(UserSession.created_at.desc()))
+    sessions = result.scalars().all()
+    return [
+        {
+            "id": s.id,
+            "device_id": s.device_id,
+            "user_agent": s.user_agent,
+            "ip_address": s.ip_address,
+            "created_at": s.created_at,
+            "last_seen_at": s.last_seen_at,
+            "is_revoked": s.is_revoked,
+        }
+        for s in sessions
+    ]
+
+@router.post("/me/sessions/{session_id}/revoke")
+async def revoke_session(session_id: int, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    s = await db.get(UserSession, session_id)
+    if not s or s.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Session not found")
+    s.is_revoked = True
+    s.last_seen_at = datetime.utcnow()
+    await db.commit()
+    return {"detail": "Session revoked"}
+
+@router.post("/me/sessions/logout-all")
+async def logout_all_sessions(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    result = await db.execute(select(UserSession).where(UserSession.user_id == current_user.id))
+    sessions = result.scalars().all()
+    for s in sessions:
+        s.is_revoked = True
+        s.last_seen_at = datetime.utcnow()
+    await db.commit()
+    return {"detail": "All sessions revoked"}
 
 # Apply OpenAPI documentation enhancements
 enhance_endpoint_docs(router, auth_docs)

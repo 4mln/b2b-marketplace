@@ -200,6 +200,7 @@ class UserProfileOut(UserOut):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    session_id: Optional[int] = None
 
 class TokenResponse(BaseModel):
     access_token: str

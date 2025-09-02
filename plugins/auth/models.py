@@ -91,6 +91,19 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)
+    device_id = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    ip_address = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_seen_at = Column(DateTime, default=datetime.utcnow)
+    is_revoked = Column(Boolean, default=False)
+
 class UserProfileChange(Base):
     """Audit trail for user profile changes"""
     __tablename__ = "user_profile_changes"

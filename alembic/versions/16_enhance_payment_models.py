@@ -117,6 +117,24 @@ def upgrade() -> None:
     op.create_foreign_key('fk_payments_user_id', 'payments', 'users', ['user_id'], ['id'])
     op.create_foreign_key('fk_payment_refunds_payment_id', 'payment_refunds', 'payments', ['payment_id'], ['id'])
 
+    # Create user_sessions table
+    try:
+        op.create_table(
+            'user_sessions',
+            sa.Column('id', sa.Integer(), primary_key=True, nullable=False),
+            sa.Column('user_id', sa.Integer(), nullable=False),
+            sa.Column('device_id', sa.String(), nullable=True),
+            sa.Column('user_agent', sa.String(), nullable=True),
+            sa.Column('ip_address', sa.String(), nullable=True),
+            sa.Column('created_at', sa.DateTime(), nullable=True),
+            sa.Column('last_seen_at', sa.DateTime(), nullable=True),
+            sa.Column('is_revoked', sa.Boolean(), nullable=False, server_default=sa.text('false')),
+        )
+        op.create_index('ix_user_sessions_user_id', 'user_sessions', ['user_id'])
+        op.create_index('ix_user_sessions_created_at', 'user_sessions', ['created_at'])
+    except Exception:
+        pass
+
 
 def downgrade() -> None:
     # Drop foreign key constraints
@@ -147,5 +165,13 @@ def downgrade() -> None:
     op.drop_table('payment_providers')
     op.drop_table('payment_refunds')
     op.drop_table('payments')
+
+    # Drop user_sessions
+    try:
+        op.drop_index('ix_user_sessions_created_at', table_name='user_sessions')
+        op.drop_index('ix_user_sessions_user_id', table_name='user_sessions')
+        op.drop_table('user_sessions')
+    except Exception:
+        pass
 
 
