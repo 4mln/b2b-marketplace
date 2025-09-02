@@ -73,6 +73,19 @@ class NotificationPreferences(BaseModel):
     price_alerts: bool = False
 
 # -----------------------------
+# 2FA Schemas
+# -----------------------------
+class TwoFASetupOut(BaseModel):
+    provisioning_uri: str
+    secret: str
+
+class TwoFAToggle(BaseModel):
+    enabled: bool
+
+class TwoFAVerify(BaseModel):
+    code: str
+
+# -----------------------------
 # User Schemas
 # -----------------------------
 class UserBase(BaseModel):

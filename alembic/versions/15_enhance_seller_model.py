@@ -40,6 +40,16 @@ def upgrade() -> None:
     op.create_index('ix_sellers_is_verified', 'sellers', ['is_verified'])
     op.create_index('ix_sellers_created_at', 'sellers', ['created_at'])
 
+    # Add 2FA fields to users table (idempotent)
+    try:
+        op.add_column('users', sa.Column('totp_secret', sa.String(), nullable=True))
+    except Exception:
+        pass
+    try:
+        op.add_column('users', sa.Column('two_factor_enabled', sa.Boolean(), nullable=True, server_default=sa.text('false')))
+    except Exception:
+        pass
+
 
 def downgrade() -> None:
     # Drop indexes
@@ -61,5 +71,15 @@ def downgrade() -> None:
     
     # Recreate old subscription_type column
     op.add_column('sellers', sa.Column('subscription_type', sa.String(), nullable=False))
+
+    # Remove 2FA fields
+    try:
+        op.drop_column('users', 'two_factor_enabled')
+    except Exception:
+        pass
+    try:
+        op.drop_column('users', 'totp_secret')
+    except Exception:
+        pass
 
 

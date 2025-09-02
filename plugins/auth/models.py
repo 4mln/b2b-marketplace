@@ -20,6 +20,10 @@ class User(Base):
     id_document = Column(String, nullable=True)  # Path to uploaded ID document
     role = Column(String, default="user", nullable=False)  # user, seller, buyer, both
     
+    # 2FA / TOTP
+    totp_secret = Column(String, nullable=True)
+    two_factor_enabled = Column(Boolean, default=False)
+    
     # Business Information
     business_name = Column(String, nullable=True)
     business_registration_number = Column(String, nullable=True)

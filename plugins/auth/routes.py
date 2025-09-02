@@ -15,7 +15,8 @@ from plugins.auth.docs import auth_docs
 from plugins.auth.schemas import (
     UserCreate, UserOut, UserProfileOut, BusinessProfileUpdate, 
     KYCVerificationRequest, KYCVerificationResponse, UserProfileChangeOut,
-    Token, OTPRequest, OTPVerify, PrivacySettings, NotificationPreferences
+    Token, OTPRequest, OTPVerify, PrivacySettings, NotificationPreferences,
+    TwoFASetupOut, TwoFAToggle, TwoFAVerify
 )
 from plugins.auth.models import User, UserProfileChange
 from plugins.auth.jwt import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -23,6 +24,7 @@ from plugins.user.crud import create_user, get_user_by_email
 from plugins.user.security import verify_password, get_password_hash
 from sqlalchemy import select, update
 from pydantic import BaseModel
+import pyotp
 
 router = APIRouter()
 
@@ -367,6 +369,43 @@ async def otp_verify(payload: OTPVerify, db: AsyncSession = Depends(get_session)
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+# -----------------------------
+# 2FA (TOTP)
+# -----------------------------
+@router.post("/me/2fa/setup", response_model=TwoFASetupOut)
+async def setup_2fa(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    if current_user.two_factor_enabled and current_user.totp_secret:
+        # Return existing provisioning URI
+        totp = pyotp.TOTP(current_user.totp_secret)
+        uri = totp.provisioning_uri(name=current_user.email, issuer_name="B2B-Marketplace")
+        return TwoFASetupOut(provisioning_uri=uri, secret=current_user.totp_secret)
+
+    secret = pyotp.random_base32()
+    await db.execute(update(User).where(User.id == current_user.id).values(totp_secret=secret, updated_at=datetime.utcnow()))
+    await db.commit()
+    totp = pyotp.TOTP(secret)
+    uri = totp.provisioning_uri(name=current_user.email, issuer_name="B2B-Marketplace")
+    return TwoFASetupOut(provisioning_uri=uri, secret=secret)
+
+@router.post("/me/2fa/verify")
+async def verify_2fa(payload: TwoFAVerify, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    if not current_user.totp_secret:
+        raise HTTPException(status_code=400, detail="2FA not initialized")
+    totp = pyotp.TOTP(current_user.totp_secret)
+    if not totp.verify(payload.code, valid_window=1):
+        raise HTTPException(status_code=400, detail="Invalid code")
+    await db.execute(update(User).where(User.id == current_user.id).values(two_factor_enabled=True, updated_at=datetime.utcnow()))
+    await db.commit()
+    return {"detail": "2FA enabled"}
+
+@router.post("/me/2fa/toggle")
+async def toggle_2fa(payload: TwoFAToggle, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+    if payload.enabled and not current_user.totp_secret:
+        raise HTTPException(status_code=400, detail="Setup 2FA first")
+    await db.execute(update(User).where(User.id == current_user.id).values(two_factor_enabled=payload.enabled, updated_at=datetime.utcnow()))
+    await db.commit()
+    return {"detail": f"2FA {'enabled' if payload.enabled else 'disabled'}"}
 
 # Apply OpenAPI documentation enhancements
 enhance_endpoint_docs(router, auth_docs)
