@@ -34,10 +34,19 @@ async def create_rfq_endpoint(
 
 
 @router.get("/rfqs", response_model=list[RFQOut])
-async def list_rfqs_endpoint(db: AsyncSession = Depends(get_session)):
+async def list_rfqs_endpoint(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
     rfqs = await crud.list_rfqs(db)
-    # Filter: if visibility is private, do not include invited list in response (kept in DB)
-    return rfqs
+    visible: list = []
+    for r in rfqs:
+        vis = getattr(r, 'visibility', None) or 'public'
+        if vis == 'public':
+            visible.append(r)
+        else:
+            invited = set(getattr(r, 'invited_seller_ids', []) or [])
+            # If current user is buyer or invited seller (by user id), allow
+            if r.buyer_id == current_user.id or current_user.id in invited:
+                visible.append(r)
+    return visible
 
 
 @router.post("/quotes", response_model=QuoteOut)
@@ -46,6 +55,15 @@ async def create_quote_endpoint(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ):
+    # Enforce private visibility: only invited sellers can quote
+    rfq = await db.get(crud.RFQ, payload.rfq_id)  # type: ignore[attr-defined]
+    if not rfq:
+        raise HTTPException(status_code=404, detail="RFQ not found")
+    vis = getattr(rfq, 'visibility', None) or 'public'
+    if vis == 'private':
+        invited = set(getattr(rfq, 'invited_seller_ids', []) or [])
+        if user.id not in invited and user.id != rfq.buyer_id:
+            raise HTTPException(status_code=403, detail="Not invited to this RFQ")
     return await crud.create_quote(db, seller_id=user.id, data=payload)
 
 

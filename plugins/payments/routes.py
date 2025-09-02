@@ -412,6 +412,15 @@ async def request_withdrawal(payload: WithdrawalRequestCreate, current_user: Use
 async def my_withdrawals(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
     return await list_withdrawal_requests(db, current_user.id)
 
+@router.get("/admin/withdrawals", response_model=List[WithdrawalRequestOut])
+async def admin_list_withdrawals(status: str | None = None, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    reqs = await list_withdrawal_requests(db, None)
+    if status:
+        reqs = [r for r in reqs if r.status == status]
+    return reqs
+
 # Admin endpoints would normally be under admin; include simple approval here for completeness
 @router.post("/withdrawals/{request_id}/approve", response_model=WithdrawalRequestOut)
 async def approve_withdrawal(request_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
