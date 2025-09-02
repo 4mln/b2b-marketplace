@@ -14,6 +14,9 @@ from app.core.config import settings
 from plugins.auth.models import User
 from plugins.auth.jwt import verify_token
 
+# Import database session functions directly to avoid circular imports
+from app.db.session import get_db_sync, get_session
+
 # OAuth2 scheme for token authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
@@ -112,8 +115,5 @@ def get_current_user_optional_sync(
         return get_current_user_sync(token, db)
     except HTTPException:
         return None
-
-# Import database session functions directly to avoid circular imports
-from app.db.session import get_db_sync, get_session
 
 
