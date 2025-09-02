@@ -121,3 +121,44 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.app_url }}
+    steps:
+      - name: Prepare variables
+        id: vars
+        run: |
+          echo "repo=ghcr.io/${GITHUB_REPOSITORY}" >> $GITHUB_OUTPUT
+          echo "image=ghcr.io/${GITHUB_REPOSITORY}:latest" >> $GITHUB_OUTPUT
+
+      - name: Deploy over SSH
+        id: deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_PORT || '22' }}
+          script: |
+            echo "Logging in to GHCR"
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "Pulling latest image"
+            docker pull ${{ steps.vars.outputs.image }}
+            echo "Deploying container"
+            docker stop b2b-marketplace || true
+            docker rm b2b-marketplace || true
+            docker run -d --name b2b-marketplace \
+              -p 8000:8000 \
+              -e DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}" \
+              -e REDIS_URL="${{ secrets.STAGING_REDIS_URL }}" \
+              -e SECRET_KEY="${{ secrets.STAGING_SECRET_KEY }}" \
+              -e ENVIRONMENT=staging \
+              ${{ steps.vars.outputs.image }} \
+              uvicorn app.main:app --host 0.0.0.0 --port 8000
+            echo "app_url=http://${{ secrets.STAGING_HOST }}:8000" >> $GITHUB_OUTPUT
+
