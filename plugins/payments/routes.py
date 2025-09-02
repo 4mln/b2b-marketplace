@@ -6,6 +6,10 @@ from datetime import datetime
 from app.db.session import get_session
 from plugins.user.security import get_current_user
 from plugins.auth.models import User
+from sqlalchemy.orm import Session
+from app.db.session import get_db_sync
+from plugins.admin.crud import get_admin_user_by_user_id, check_admin_permission
+from plugins.admin.models import AdminPermission
 from plugins.payments.models import Payment, PaymentStatus, PaymentMethod, PaymentType
 from plugins.payments.iran_providers import IranPaymentFactory, get_available_providers, calculate_payment_fees
 from plugins.payments.schemas import (
@@ -423,19 +427,20 @@ async def admin_list_withdrawals(status: str | None = None, db: AsyncSession = D
 
 # Admin endpoints would normally be under admin; include simple approval here for completeness
 @router.post("/withdrawals/{request_id}/approve", response_model=WithdrawalRequestOut)
-async def approve_withdrawal(request_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    # TODO: enforce admin RBAC; placeholder check
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+async def approve_withdrawal(request_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user), db_sync: Session = Depends(get_db_sync)):
+    admin = get_admin_user_by_user_id(db_sync, current_user.id)
+    if not admin or not check_admin_permission(db_sync, admin.id, AdminPermission.VIEW_FINANCIAL_REPORTS):
+        raise HTTPException(status_code=403, detail="Admin permission required")
     req = await update_withdrawal_status(db, request_id, "approved")
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
     return req
 
 @router.post("/withdrawals/{request_id}/reject", response_model=WithdrawalRequestOut)
-async def reject_withdrawal(request_id: int, reason: str | None = None, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+async def reject_withdrawal(request_id: int, reason: str | None = None, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user), db_sync: Session = Depends(get_db_sync)):
+    admin = get_admin_user_by_user_id(db_sync, current_user.id)
+    if not admin or not check_admin_permission(db_sync, admin.id, AdminPermission.VIEW_FINANCIAL_REPORTS):
+        raise HTTPException(status_code=403, detail="Admin permission required")
     req = await update_withdrawal_status(db, request_id, "rejected", reason)
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
