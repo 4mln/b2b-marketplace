@@ -33,6 +33,7 @@ async def setup_test_db():
         from plugins.user.models import Base as UserBase
         from plugins.rfq.models import Base as RFQBase
         from plugins.payments.models import Base as PaymentsBase
+        from plugins.admin.models import Base as AdminBase
         
         # Drop tables
         await conn.run_sync(OrdersBase.metadata.drop_all)
@@ -40,6 +41,7 @@ async def setup_test_db():
         await conn.run_sync(UserBase.metadata.drop_all)
         await conn.run_sync(RFQBase.metadata.drop_all)
         await conn.run_sync(PaymentsBase.metadata.drop_all)
+        await conn.run_sync(AdminBase.metadata.drop_all)
         
         # Create tables
         await conn.run_sync(OrdersBase.metadata.create_all)
@@ -47,6 +49,7 @@ async def setup_test_db():
         await conn.run_sync(UserBase.metadata.create_all)
         await conn.run_sync(RFQBase.metadata.create_all)
         await conn.run_sync(PaymentsBase.metadata.create_all)
+        await conn.run_sync(AdminBase.metadata.create_all)
     
     yield
     
@@ -57,11 +60,13 @@ async def setup_test_db():
         from plugins.user.models import Base as UserBase
         from plugins.rfq.models import Base as RFQBase
         from plugins.payments.models import Base as PaymentsBase
+        from plugins.admin.models import Base as AdminBase
         await conn.run_sync(OrdersBase.metadata.drop_all)
         await conn.run_sync(ProductsBase.metadata.drop_all)
         await conn.run_sync(UserBase.metadata.drop_all)
         await conn.run_sync(RFQBase.metadata.drop_all)
         await conn.run_sync(PaymentsBase.metadata.drop_all)
+        await conn.run_sync(AdminBase.metadata.drop_all)
 
 
 @pytest.fixture
