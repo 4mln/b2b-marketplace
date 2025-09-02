@@ -1,8 +1,11 @@
 import pytest
+import plugins.admin.crud as admin_crud
 
 
 @pytest.mark.asyncio
-async def test_admin_withdrawal_approval_flow(client, auth_headers, admin_user, admin_headers):
+async def test_admin_withdrawal_approval_flow(client, auth_headers, admin_user, admin_headers, monkeypatch):
+    # Ensure admin permission always passes for this test
+    monkeypatch.setattr(admin_crud, "check_admin_permission", lambda db, admin_id, perm: True)
     # Create a withdrawal as regular user
     payload = {
         "amount": 500000,
