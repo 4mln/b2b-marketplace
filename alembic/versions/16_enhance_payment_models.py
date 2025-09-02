@@ -7,6 +7,7 @@ Create Date: 2025-08-29 04:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -153,10 +154,20 @@ def upgrade() -> None:
         op.create_foreign_key('fk_withdrawals_user_id', 'withdrawal_requests', 'users', ['user_id'], ['id'])
     except Exception:
         pass
+    # DB-level throttle: partial index to count RFQs per buyer per 5 minutes is non-trivial without functions.
+    # As a placeholder, create an index on (buyer_id, created_at) to support server-side throttling queries.
+    try:
+        op.create_index('ix_rfqs_buyer_created_at', 'rfqs', ['buyer_id', 'created_at'])
+    except Exception:
+        pass
 
     # Alter rfqs to add visibility and invited_seller_ids
     try:
         op.add_column('rfqs', sa.Column('visibility', sa.String(), nullable=True))
+    except Exception:
+        pass
+    try:
+        op.drop_index('ix_rfqs_buyer_created_at', table_name='rfqs')
     except Exception:
         pass
     try:

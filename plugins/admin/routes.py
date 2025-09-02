@@ -12,6 +12,9 @@ from app.core.auth import get_current_user_sync as get_current_user
 from plugins.auth.models import User
 from . import crud, schemas
 from .models import AdminRole, AdminPermission, AdminActionType, AdminActionStatus
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_session
+from plugins.payments.crud import list_withdrawal_requests, update_withdrawal_status
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -731,5 +734,54 @@ def admin_search(
         "page": skip // limit + 1,
         "page_size": limit
     }
+
+
+# Finance: Withdrawal Management
+@router.get("/finance/withdrawals", response_model=List[Dict[str, Any]])
+def admin_list_withdrawals(
+    status: Optional[str] = None,
+    db_async: AsyncSession = Depends(get_session),
+    admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_FINANCIAL_REPORTS))
+):
+    import asyncio
+    reqs = asyncio.get_event_loop().run_until_complete(list_withdrawal_requests(db_async, None))
+    if status:
+        reqs = [r for r in reqs if r.status == status]
+    return [
+        {
+            "id": r.id,
+            "user_id": r.user_id,
+            "amount": r.amount,
+            "currency": r.currency,
+            "status": r.status,
+            "created_at": r.created_at,
+        }
+        for r in reqs
+    ]
+
+@router.post("/finance/withdrawals/{request_id}/approve", response_model=Dict[str, Any])
+def admin_approve_withdrawal(
+    request_id: int,
+    db_async: AsyncSession = Depends(get_session),
+    admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_FINANCIAL_REPORTS))
+):
+    import asyncio
+    req = asyncio.get_event_loop().run_until_complete(update_withdrawal_status(db_async, request_id, "approved"))
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return {"detail": "Approved"}
+
+@router.post("/finance/withdrawals/{request_id}/reject", response_model=Dict[str, Any])
+def admin_reject_withdrawal(
+    request_id: int,
+    reason: Optional[str] = None,
+    db_async: AsyncSession = Depends(get_session),
+    admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_FINANCIAL_REPORTS))
+):
+    import asyncio
+    req = asyncio.get_event_loop().run_until_complete(update_withdrawal_status(db_async, request_id, "rejected", reason))
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return {"detail": "Rejected"}
 
 
