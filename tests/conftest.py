@@ -116,6 +116,27 @@ def auth_headers(test_user):
 
 
 @pytest.fixture
+async def admin_user(db_session, test_user):
+    """Promote test_user to admin with finance permissions."""
+    from plugins.admin.models import AdminUser, AdminRole, AdminPermission
+    admin = AdminUser(
+        user_id=test_user.id,
+        role=AdminRole.SUPER_ADMIN,
+        permissions=[AdminPermission.VIEW_FINANCIAL_REPORTS]
+    )
+    db_session.add(admin)
+    await db_session.commit()
+    await db_session.refresh(admin)
+    return admin
+
+
+@pytest.fixture
+def admin_headers(auth_headers):
+    # Uses the same token as test_user; paired with admin_user fixture makes it admin
+    return auth_headers
+
+
+@pytest.fixture
 async def test_user_2(db_session):
     """Create a second test user."""
     from plugins.user.models import User
