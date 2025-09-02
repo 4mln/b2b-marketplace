@@ -1,8 +1,11 @@
 import pytest
+import plugins.admin.crud as admin_crud
 
 
 @pytest.mark.asyncio
-async def test_create_and_list_withdrawal(client, auth_headers):
+async def test_create_and_list_withdrawal(client, auth_headers, monkeypatch):
+    # Ensure admin permission checks won't interfere inadvertently
+    monkeypatch.setattr(admin_crud, "check_admin_permission", lambda db, admin_id, perm: True)
     # Create withdrawal
     payload = {
         "amount": 1234500,

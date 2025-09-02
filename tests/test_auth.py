@@ -1,6 +1,6 @@
 import pytest
-from httpx import AsyncClient
 from fastapi import status
+import plugins.admin.crud as admin_crud
 
 
 @pytest.mark.asyncio
