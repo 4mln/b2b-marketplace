@@ -114,6 +114,9 @@ def get_current_user_optional_sync(
         return None
 
 # Import database session functions directly to avoid circular imports
-from app.db.session import get_db_sync, get_session
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.orm import Session
 
 

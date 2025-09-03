@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import get_session, get_db_sync
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from .models import Escrow
 # Lazy imports to avoid circular dependencies during plugin discovery

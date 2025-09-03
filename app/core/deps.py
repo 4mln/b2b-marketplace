@@ -6,7 +6,19 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from app.db.session import get_db_sync, get_session
+# Lazy import helpers to avoid circulars at import time
+def get_db_sync():
+    from app.db.session import get_db_sync as _get_db_sync
+    yield from _get_db_sync()
+
+def get_db():
+    # alias for sync
+    from app.db.session import get_db_sync as _get_db_sync
+    yield from _get_db_sync()
+
+def get_session():
+    from app.db.session import get_session as _get_session
+    return _get_session()
 from plugins.auth.models import User
 
 # Database dependencies
