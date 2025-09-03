@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from plugins.orders.schemas import OrderCreate, OrderUpdate, OrderOut
 from plugins.orders.crud import create_order, get_order, update_order, delete_order, list_orders
-from app.db.session import get_session
+
 from plugins.user.models import User
 from plugins.user.security import get_current_user
 from plugins.products.dependencies import enforce_product_limit
@@ -18,7 +18,7 @@ router = APIRouter()
 async def create_order_endpoint(
     order: OrderCreate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     _: None = Depends(enforce_product_limit)
 ):
     try:
@@ -28,7 +28,7 @@ async def create_order_endpoint(
 
 
 @router.get("/{order_id}", response_model=OrderOut, operation_id="order_get_by_id")
-async def get_order_endpoint(order_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def get_order_endpoint(order_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     db_order = await get_order(db, order_id, buyer_id=user.id)
     if not db_order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -40,7 +40,7 @@ async def update_order_endpoint(
     order_id: int,
     order_data: OrderUpdate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ):
     try:
         db_order = await update_order(db, order_id, order_data, buyer_id=user.id)
@@ -52,7 +52,7 @@ async def update_order_endpoint(
 
 
 @router.delete("/{order_id}", response_model=dict, operation_id="order_delete")
-async def delete_order_endpoint(order_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def delete_order_endpoint(order_id: int, user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     success = await delete_order(db, order_id, buyer_id=user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -62,7 +62,7 @@ async def delete_order_endpoint(order_id: int, user: User = Depends(get_current_
 @router.get("/", response_model=List[OrderOut], operation_id="order_list")
 async def list_orders_endpoint(
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100)
 ):

@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/pages/{slug}")
-async def get_page(slug: str, db: AsyncSession = Depends(get_session)):
+async def get_page(slug: str, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     result = await db.execute(select(Page).where(Page.slug == slug))
     page = result.scalars().first()
     if not page:
@@ -18,7 +18,7 @@ async def get_page(slug: str, db: AsyncSession = Depends(get_session)):
 
 
 @router.post("/pages")
-async def create_page(slug: str, title: str, content: str, db: AsyncSession = Depends(get_session)):
+async def create_page(slug: str, title: str, content: str, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     page = Page(slug=slug, title=title, content=content)
     db.add(page)
     await db.commit()
@@ -27,7 +27,7 @@ async def create_page(slug: str, title: str, content: str, db: AsyncSession = De
 
 
 @router.patch("/pages/{slug}")
-async def update_page(slug: str, title: str | None = None, content: str | None = None, db: AsyncSession = Depends(get_session)):
+async def update_page(slug: str, title: str | None = None, content: str | None = None, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     result = await db.execute(select(Page).where(Page.slug == slug))
     page = result.scalars().first()
     if not page:

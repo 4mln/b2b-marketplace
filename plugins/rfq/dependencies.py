@@ -6,7 +6,7 @@ from plugins.subscriptions.crud import check_plan_limits
 from plugins.rfq.models import RFQ
 
 
-async def enforce_rfq_limit(user_id: int, db: AsyncSession = Depends(get_session)):
+async def enforce_rfq_limit(user_id: int, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     plan = await check_plan_limits(user_id, db)
     if not plan:
         raise HTTPException(status_code=403, detail="No active subscription")

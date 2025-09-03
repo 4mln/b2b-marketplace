@@ -30,7 +30,7 @@ router = APIRouter()
 async def create_seller_endpoint(
     seller: SellerCreate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> SellerOut:
     return await create_seller(db, seller, user.id)
 
@@ -40,7 +40,7 @@ async def create_seller_endpoint(
 @router.get("/{seller_id}", response_model=SellerOut, operation_id="seller_get_by_id")
 async def get_seller_endpoint(
     seller_id: int,
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> SellerOut:
     db_seller = await get_seller(db, seller_id)
     if not db_seller:
@@ -55,7 +55,7 @@ async def update_seller_endpoint(
     seller_id: int,
     seller_data: SellerUpdate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> SellerOut:
     db_seller = await update_seller(db, seller_id, seller_data, user.id)
     if not db_seller:
@@ -69,7 +69,7 @@ async def update_seller_endpoint(
 async def delete_seller_endpoint(
     seller_id: int,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> dict:
     success = await delete_seller(db, seller_id, user.id)
     if not success:
@@ -87,7 +87,7 @@ async def list_sellers_endpoint(
     sort_dir: str = Query("asc", regex="^(asc|desc)$", description="Sort direction"),
     search: Optional[str] = Query(None, description="Search term for seller name"),
     subscription_type: Optional[SubscriptionType] = Query(None, description="Filter by subscription type"),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> List[SellerOut]:
     return await list_sellers(db, offset=(page-1)*page_size, limit=page_size)
 
@@ -100,7 +100,7 @@ async def seller_storefront(
     seller_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ):
     seller = await get_seller(db, seller_id)
     if not seller:

@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.db.session import get_session
 from plugins.gamification.models import Badge, UserPoints
 from plugins.gamification.schemas import BadgeOut, AwardPoints, AssignBadge
 from plugins.user.models import User
@@ -19,7 +18,7 @@ router = APIRouter(prefix="/gamification", tags=["Gamification"])
 @router.post("/points", response_model=dict, operation_id="gamification_award_points")
 async def award_points_to_user(
     data: AwardPoints,
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     user = await db.get(User, data.user_id)
     if not user:
@@ -43,7 +42,7 @@ async def award_points_to_user(
 @router.post("/badges", response_model=BadgeOut, operation_id="gamification_assign_badge")
 async def assign_badge_to_user(
     data: AssignBadge,
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     user = await db.get(User, data.user_id)
     if not user:
@@ -63,7 +62,7 @@ async def assign_badge_to_user(
 @router.get("/badges/{user_id}", response_model=List[BadgeOut], operation_id="gamification_get_badges")
 async def get_user_badges(
     user_id: int,
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     result = await db.execute(
         select(Badge).where(Badge.user_id == user_id)
@@ -77,7 +76,7 @@ async def get_user_badges(
 @router.get("/points/{user_id}", response_model=dict, operation_id="gamification_get_points")
 async def get_user_points(
     user_id: int,
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     user_points = await db.get(UserPoints, user_id)
     if not user_points:

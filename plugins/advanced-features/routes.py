@@ -11,14 +11,14 @@ router = APIRouter()
 # List all AI tasks
 # -----------------------------
 @router.get("/ai-tasks", response_model=List[schemas.AITaskOut])
-async def list_ai_tasks(db: AsyncSession = Depends(get_session)):
+async def list_ai_tasks(db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     return await crud.get_ai_tasks(db)
 
 # -----------------------------
 # Create an AI task
 # -----------------------------
 @router.post("/ai-tasks", response_model=schemas.AITaskOut)
-async def create_ai_task(task: schemas.AITaskCreate, db: AsyncSession = Depends(get_session)):
+async def create_ai_task(task: schemas.AITaskCreate, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     return await crud.create_ai_task(db, task)
 
 # -----------------------------

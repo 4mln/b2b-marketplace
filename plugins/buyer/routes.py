@@ -19,7 +19,7 @@ router = APIRouter(prefix="/buyers", tags=["buyers"])
 @router.post("/", response_model=BuyerOut)
 async def create_new_buyer(
     buyer: BuyerCreate,
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     user: User = Depends(get_current_user),
 ):
     return await crud.create_buyer(db, buyer, user.id)
@@ -31,7 +31,7 @@ async def create_new_buyer(
 @router.get("/{buyer_id}", response_model=BuyerOut)
 async def read_buyer(
     buyer_id: int,
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ):
     buyer = await crud.get_buyer(db, buyer_id)
     if not buyer:
@@ -46,7 +46,7 @@ async def read_buyer(
 async def update_buyer_endpoint(
     buyer_id: int,
     buyer_data: BuyerUpdate,
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     user: User = Depends(get_current_user),
 ):
     updated = await crud.update_buyer(db, buyer_id, buyer_data, user.id)
@@ -63,7 +63,7 @@ async def update_buyer_endpoint(
 @router.delete("/{buyer_id}", response_model=dict)
 async def delete_buyer_endpoint(
     buyer_id: int,
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     user: User = Depends(get_current_user),
 ):
     success = await crud.delete_buyer(db, buyer_id, user.id)
@@ -84,6 +84,6 @@ async def list_buyers_endpoint(
     sort_by: str = Query("id"),
     sort_dir: str = Query("asc", regex="^(asc|desc)$"),
     search: Optional[str] = None,
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ):
     return await crud.list_buyers(db, page, page_size, sort_by, sort_dir, search)

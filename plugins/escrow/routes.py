@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.post("/hold")
-async def hold_escrow(order_id: int, amount: float, currency: str = "IRR", db: AsyncSession = Depends(get_session)):
+async def hold_escrow(order_id: int, amount: float, currency: str = "IRR", db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     # Lazy imports to avoid circular dependencies
     from plugins.orders.models import Order
     from plugins.wallet.integrations import process_marketplace_payment
@@ -32,7 +32,7 @@ async def hold_escrow(order_id: int, amount: float, currency: str = "IRR", db: A
 
 
 @router.post("/{escrow_id}/release")
-async def release_escrow(escrow_id: int, db: AsyncSession = Depends(get_session)):
+async def release_escrow(escrow_id: int, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     await db.execute(update(Escrow).where(Escrow.id == escrow_id).set({Escrow.status: "released"}))
     await db.commit()
     e = await db.get(Escrow, escrow_id)
@@ -42,7 +42,7 @@ async def release_escrow(escrow_id: int, db: AsyncSession = Depends(get_session)
 
 
 @router.post("/{escrow_id}/refund")
-async def refund_escrow(escrow_id: int, db: AsyncSession = Depends(get_session)):
+async def refund_escrow(escrow_id: int, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     # Lazy imports to avoid circular dependencies
     from plugins.orders.models import Order
     from plugins.wallet.integrations import process_marketplace_refund

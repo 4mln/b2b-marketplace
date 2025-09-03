@@ -53,7 +53,7 @@ manager = ConnectionManager()
 async def create_chat_room(
     chat_data: schemas.ChatRoomCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Create a new chat room"""
     if current_user.id not in chat_data.participant_ids:
@@ -82,7 +82,7 @@ async def get_user_chats(
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get all chat rooms for the current user"""
     chats = await crud.get_user_chats(db, current_user.id, skip, limit)
@@ -128,7 +128,7 @@ async def get_user_chats(
 async def get_chat_room(
     chat_room_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get a specific chat room"""
     chat_room = await crud.get_chat_room(db, chat_room_id, current_user.id)
@@ -157,7 +157,7 @@ async def update_chat_room(
     chat_room_id: int,
     update_data: schemas.ChatRoomUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Update chat room details"""
     chat_room = await crud.get_chat_room(db, chat_room_id, current_user.id)
@@ -201,7 +201,7 @@ async def send_message(
     chat_room_id: int,
     message_data: schemas.MessageCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Send a message to a chat room"""
     # Verify user is participant
@@ -237,7 +237,7 @@ async def get_messages(
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get messages from a chat room"""
     # Verify user is participant
@@ -285,7 +285,7 @@ async def update_message(
     message_id: int,
     update_data: schemas.MessageUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Update a message"""
     message = await crud.update_message(db, message_id, current_user.id, update_data.content)
@@ -314,7 +314,7 @@ async def update_message(
 async def delete_message(
     message_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Delete a message"""
     success = await crud.delete_message(db, message_id, current_user.id)
@@ -328,7 +328,7 @@ async def delete_message(
 async def mark_chat_read(
     chat_room_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Mark all messages in a chat as read"""
     # Verify user is participant
@@ -345,7 +345,7 @@ async def mark_chat_read(
 async def get_participants(
     chat_room_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get all participants in a chat room"""
     # Verify user is participant
@@ -381,7 +381,7 @@ async def add_participant(
     chat_room_id: int,
     participant_data: schemas.ChatParticipantCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Add a participant to a chat room"""
     # Verify user is admin for group chats
@@ -410,7 +410,7 @@ async def remove_participant(
     chat_room_id: int,
     user_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Remove a participant from a chat room"""
     # Verify user is admin or removing themselves
@@ -440,7 +440,7 @@ async def create_invitation(
     chat_room_id: int,
     invitation_data: schemas.ChatInvitationCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Create an invitation to join a chat room"""
     # Verify user is admin for group chats
@@ -469,7 +469,7 @@ async def get_user_invitations(
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get invitations for the current user"""
     invitations = await crud.get_user_invitations(db, current_user.id, skip, limit)
@@ -502,7 +502,7 @@ async def respond_to_invitation(
     invitation_id: int,
     response_data: schemas.ChatInvitationUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Respond to a chat invitation"""
     invitation = await crud.respond_to_invitation(
@@ -532,7 +532,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
 @router.get("/rooms", response_model=List[schemas.ChatRoomWithParticipants])
 async def get_user_chat_rooms(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get all chat rooms for the current user"""
     chats = await crud.get_user_chats(db, current_user.id, skip, limit)
@@ -578,7 +578,7 @@ async def get_user_chat_rooms(
 async def get_chat_room(
     room_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get a specific chat room"""
     chat_room = await crud.get_chat_room(db, chat_room_id, current_user.id)
@@ -607,7 +607,7 @@ async def update_chat_room(
     room_id: int,
     chat_data: schemas.ChatRoomUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Update chat room details"""
     chat_room = await crud.get_chat_room(db, chat_room_id, current_user.id)
@@ -649,7 +649,7 @@ async def update_chat_room(
 async def delete_chat_room(
     room_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Delete a chat room"""
     success = await crud.delete_chat_room(db, room_id, current_user.id)
@@ -664,7 +664,7 @@ async def add_participant_to_room(
     room_id: int,
     participant_data: schemas.ChatParticipantCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Add a participant to a chat room"""
     # Verify user is admin for group chats
@@ -693,7 +693,7 @@ async def remove_participant_from_room(
     room_id: int,
     user_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Remove a participant from a chat room"""
     # Verify user is admin or removing themselves
@@ -723,7 +723,7 @@ async def get_chat_messages(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get messages from a chat room"""
     # Verify user is participant
@@ -771,7 +771,7 @@ async def create_message(
     room_id: int,
     message: schemas.MessageCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Send a message to a chat room"""
     # Verify user is participant
@@ -806,7 +806,7 @@ async def update_message(
     message_id: int,
     message_data: schemas.MessageUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Update a message"""
     message = await crud.update_message(db, message_id, current_user.id, update_data.content)
@@ -835,7 +835,7 @@ async def update_message(
 async def delete_message(
     message_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Delete a message"""
     success = await crud.delete_message(db, message_id, current_user.id)
@@ -849,7 +849,7 @@ async def delete_message(
 async def mark_chat_read(
     chat_room_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Mark all messages in a chat as read"""
     # Verify user is participant
@@ -866,7 +866,7 @@ async def mark_chat_read(
 async def get_participants(
     chat_room_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get all participants in a chat room"""
     # Verify user is participant
@@ -902,7 +902,7 @@ async def add_participant(
     chat_room_id: int,
     participant_data: schemas.ChatParticipantCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Add a participant to a chat room"""
     # Verify user is admin for group chats
@@ -931,7 +931,7 @@ async def remove_participant(
     chat_room_id: int,
     user_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Remove a participant from a chat room"""
     # Verify user is admin or removing themselves
@@ -961,7 +961,7 @@ async def create_invitation(
     chat_room_id: int,
     invitation_data: schemas.ChatInvitationCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Create an invitation to join a chat room"""
     # Verify user is admin for group chats
@@ -990,7 +990,7 @@ async def get_user_invitations(
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get invitations for the current user"""
     invitations = await crud.get_user_invitations(db, current_user.id, skip, limit)
@@ -1023,7 +1023,7 @@ async def respond_to_invitation(
     invitation_id: int,
     response_data: schemas.ChatInvitationUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Respond to a chat invitation"""
     invitation = await crud.respond_to_invitation(
@@ -1053,7 +1053,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
 @router.get("/unread", response_model=schemas.UnreadMessagesResponse)
 async def get_unread_message_count(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get all chat rooms for the current user"""
     chats = await crud.get_user_chats(db, current_user.id, skip, limit)
@@ -1099,7 +1099,7 @@ async def get_unread_message_count(
 async def mark_message_as_read(
     message_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Mark all messages in a chat as read"""
     # Verify user is participant
@@ -1115,7 +1115,7 @@ async def mark_message_as_read(
 async def mark_all_room_messages_as_read(
     room_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Mark all messages in a chat as read"""
     # Verify user is participant

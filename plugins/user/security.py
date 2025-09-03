@@ -11,7 +11,7 @@ def get_password_hash(password: str) -> str:
 
 
 # Placeholder: in production, replace with JWT authentication
-async def get_current_user(db: AsyncSession = Depends(get_session)):
+async def get_current_user(db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     # For now, return a fake user
     user = await get_user_by_id(db, user_id=1)
     if not user:

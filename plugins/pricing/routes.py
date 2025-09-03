@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from app.db.session import get_session
+
 from plugins.pricing.schemas import Price, PriceResponse
 
 router = APIRouter()
@@ -19,7 +19,7 @@ async def health():
 @router.get("/{product_id}", response_model=PriceResponse, summary="Get product pricing")
 async def get_product_price(
     product_id: int,
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     include_discounts: bool = Query(True, description="Include discount calculations")
 ):
     """

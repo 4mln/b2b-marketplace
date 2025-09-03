@@ -3,11 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 from datetime import datetime
 
-from app.db.session import get_session
 from plugins.user.security import get_current_user
 from plugins.auth.models import User
 from sqlalchemy.orm import Session
-from app.db.session import get_db_sync
+
 from plugins.admin.crud import get_admin_user_by_user_id, check_admin_permission
 from plugins.admin.models import AdminPermission
 from plugins.payments.models import Payment, PaymentStatus, PaymentMethod, PaymentType
@@ -66,7 +65,7 @@ async def calculate_fees(
 async def wallet_topup(
     topup_request: WalletTopupRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Top up wallet using Iran payment providers"""
     
@@ -145,7 +144,7 @@ async def wallet_topup(
 async def payment_callback(
     provider_name: str,
     request: Request,
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Handle payment callbacks from providers"""
     
@@ -180,7 +179,7 @@ async def payment_callback(
 async def verify_payment(
     verification: PaymentVerification,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Verify payment with provider"""
     
@@ -237,7 +236,7 @@ async def verify_payment(
 @router.get("/user/payments", response_model=List[PaymentOut], operation_id="get_user_payments")
 async def get_user_payments(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     status: PaymentStatus = Query(None),
@@ -261,7 +260,7 @@ async def get_user_payments(
 async def get_payment_details(
     payment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Get payment details"""
     payment = await get_payment(db, payment_id)
@@ -280,7 +279,7 @@ async def get_payment_details(
 async def cancel_payment(
     payment_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     """Cancel a pending payment"""
     payment = await get_payment(db, payment_id)
@@ -302,7 +301,7 @@ async def cancel_payment(
 @router.get("/user/statistics", operation_id="get_payment_statistics")
 async def get_payment_statistics(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     days: int = Query(30, ge=1, le=365)
 ):
     """Get user's payment statistics"""
@@ -362,7 +361,7 @@ logger = logging.getLogger(__name__)
 # Invoice PDF
 # -----------------------------
 @router.get("/{payment_id}/invoice.pdf")
-async def get_payment_invoice_pdf(payment_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def get_payment_invoice_pdf(payment_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     payment = await get_payment(db, payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
@@ -405,7 +404,7 @@ async def get_payment_invoice_pdf(payment_id: int, current_user: User = Depends(
 # Withdrawal Requests
 # -----------------------------
 @router.post("/withdrawals", response_model=WithdrawalRequestOut)
-async def request_withdrawal(payload: WithdrawalRequestCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def request_withdrawal(payload: WithdrawalRequestCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     # Basic compliance checks: ensure user has bank account IBAN/Sheba format if provided
     if not payload.bank_account.get("iban") and not payload.bank_account.get("sheba"):
         raise HTTPException(status_code=400, detail="Bank account must include IBAN/Sheba")
@@ -413,11 +412,11 @@ async def request_withdrawal(payload: WithdrawalRequestCreate, current_user: Use
     return req
 
 @router.get("/withdrawals", response_model=List[WithdrawalRequestOut])
-async def my_withdrawals(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def my_withdrawals(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     return await list_withdrawal_requests(db, current_user.id)
 
 @router.get("/admin/withdrawals", response_model=List[WithdrawalRequestOut])
-async def admin_list_withdrawals(status: str | None = None, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+async def admin_list_withdrawals(status: str | None = None, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     reqs = await list_withdrawal_requests(db, None)
@@ -427,7 +426,7 @@ async def admin_list_withdrawals(status: str | None = None, db: AsyncSession = D
 
 # Admin endpoints would normally be under admin; include simple approval here for completeness
 @router.post("/withdrawals/{request_id}/approve", response_model=WithdrawalRequestOut)
-async def approve_withdrawal(request_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user), db_sync: Session = Depends(get_db_sync)):
+async def approve_withdrawal(request_id: int, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session), current_user: User = Depends(get_current_user), db_sync: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync)):
     admin = get_admin_user_by_user_id(db_sync, current_user.id)
     if not admin or not check_admin_permission(db_sync, admin.id, AdminPermission.VIEW_FINANCIAL_REPORTS):
         raise HTTPException(status_code=403, detail="Admin permission required")
@@ -437,7 +436,7 @@ async def approve_withdrawal(request_id: int, db: AsyncSession = Depends(get_ses
     return req
 
 @router.post("/withdrawals/{request_id}/reject", response_model=WithdrawalRequestOut)
-async def reject_withdrawal(request_id: int, reason: str | None = None, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user), db_sync: Session = Depends(get_db_sync)):
+async def reject_withdrawal(request_id: int, reason: str | None = None, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session), current_user: User = Depends(get_current_user), db_sync: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync)):
     admin = get_admin_user_by_user_id(db_sync, current_user.id)
     if not admin or not check_admin_permission(db_sync, admin.id, AdminPermission.VIEW_FINANCIAL_REPORTS):
         raise HTTPException(status_code=403, detail="Admin permission required")

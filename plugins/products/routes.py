@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
-from app.db.session import get_session
-from app.db.session import get_db_sync
+
 from plugins.products.schemas import ProductCreate, ProductUpdate, ProductOut
 from plugins.products.crud import (
     create_product,
@@ -37,7 +36,7 @@ async def public_products_endpoint(
     brand: Optional[str] = Query(None, description="Filter by brand"),
     boosted: bool = Query(False, description="Apply subscription-based boosts"),
     synonyms: Optional[List[str]] = Query(None, description="Synonyms for search"),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> List[ProductOut]:
     """Public catalog: hides seller identity at response layer (schema does not include seller)."""
     items = await list_products(
@@ -63,17 +62,17 @@ async def public_products_endpoint(
 # Discovery sections placeholders
 # -----------------------------
 @router.get("/sections/recommended", response_model=List[ProductOut], operation_id="product_recommended")
-async def recommended_products(db: AsyncSession = Depends(get_session)):
+async def recommended_products(db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     return await list_products(db, page=1, page_size=10, sort_by="id", sort_dir="desc")
 
 
 @router.get("/sections/trending", response_model=List[ProductOut], operation_id="product_trending")
-async def trending_products(db: AsyncSession = Depends(get_session)):
+async def trending_products(db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     return await list_products(db, page=1, page_size=10, sort_by="id", sort_dir="desc")
 
 
 @router.get("/sections/new", response_model=List[ProductOut], operation_id="product_new")
-async def new_products(db: AsyncSession = Depends(get_session)):
+async def new_products(db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     return await list_products(db, page=1, page_size=10, sort_by="created_at", sort_dir="desc")
 
 # -----------------------------
@@ -83,7 +82,7 @@ async def new_products(db: AsyncSession = Depends(get_session)):
 async def create_product_endpoint(
     product: ProductCreate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     _: None = Depends(enforce_product_limit), # ✅ enforce product limit
 ) -> ProductOut:
     """Create a new product linked to the current user (seller)."""
@@ -101,7 +100,7 @@ async def create_product_endpoint(
 @router.get("/{product_id}", response_model=ProductOut, operation_id="product_get_by_id")
 async def get_product_endpoint(
     product_id: int,
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> ProductOut:
     """Fetch a product by its ID."""
     db_product = await get_product(db, product_id)
@@ -117,7 +116,7 @@ async def update_product_endpoint(
     product_id: int,
     product_data: ProductUpdate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> ProductOut:
     """Update an existing product (only owner can update)."""
     db_product = await update_product(db, product_id, product_data, user.id)
@@ -140,7 +139,7 @@ async def update_product_endpoint(
 async def delete_product_endpoint(
     product_id: int,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> dict:
     """Delete an existing product (only owner can delete)."""
     success = await delete_product(db, product_id, user.id)
@@ -173,7 +172,7 @@ async def list_products_endpoint(
     brand: Optional[str] = Query(None, description="Filter by brand"),
     boosted: bool = Query(False, description="Apply subscription-based boosts"),
     synonyms: Optional[List[str]] = Query(None, description="Synonyms for search"),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ) -> List[ProductOut]:
     """List all products with pagination, sorting, and filters."""
     return await list_products(

@@ -8,7 +8,6 @@ import os
 import shutil
 from typing import List
 
-from app.db.session import get_session
 from app.core.auth import get_current_user_sync as get_current_user
 from app.core.openapi import enhance_endpoint_docs
 from plugins.auth.docs import auth_docs
@@ -33,7 +32,7 @@ router = APIRouter()
 # Signup endpoint
 # -----------------------------
 @router.post("/signup", operation_id="signup")
-async def signup(user_in=Depends(), db: AsyncSession = Depends(get_session)):
+async def signup(user_in=Depends(), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     if not isinstance(user_in, UserCreate):
         user_in = UserCreate(**user_in.dict())
 
@@ -57,7 +56,7 @@ async def signup(user_in=Depends(), db: AsyncSession = Depends(get_session)):
 @router.post("/token", operation_id="login_for_access_token")
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ):
     user = await get_user_by_email(db, form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -95,7 +94,7 @@ async def read_current_user(current_user=Depends(get_current_user)):
 # Get complete user profile
 # -----------------------------
 @router.get("/me/profile", response_model=UserProfileOut, operation_id="read_user_profile")
-async def read_user_profile(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def read_user_profile(current_user=Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     return UserProfileOut.model_validate(current_user)
 
 # -----------------------------
@@ -105,7 +104,7 @@ async def read_user_profile(current_user=Depends(get_current_user), db: AsyncSes
 async def update_user_profile(
     profile_update: BusinessProfileUpdate,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     request: Request = None
 ):
     # Calculate profile completion percentage
@@ -160,7 +159,7 @@ async def update_user_profile(
 async def upload_business_photo(
     file: UploadFile = File(...),
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
@@ -193,7 +192,7 @@ async def upload_business_photo(
 async def upload_banner_photo(
     file: UploadFile = File(...),
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     if not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
@@ -226,7 +225,7 @@ async def upload_banner_photo(
 async def kyc_verification(
     kyc_data: KYCVerificationRequest,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     # Check if user has completed OTP verification
     if current_user.kyc_status == "pending":
@@ -265,7 +264,7 @@ async def kyc_verification(
 @router.get("/me/profile/changes", response_model=List[UserProfileChangeOut], operation_id="get_profile_changes")
 async def get_profile_changes(
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     limit: int = 50
 ):
     result = await db.execute(
@@ -284,7 +283,7 @@ async def get_profile_changes(
 async def update_privacy_settings(
     privacy_settings: PrivacySettings,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     await db.execute(
         update(User).where(User.id == current_user.id).values(
@@ -303,7 +302,7 @@ async def update_privacy_settings(
 async def update_notification_preferences(
     notification_preferences: NotificationPreferences,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
 ):
     await db.execute(
         update(User).where(User.id == current_user.id).values(
@@ -319,7 +318,7 @@ async def update_notification_preferences(
 # OTP-first: request code to phone (Iran provider stub)
 # -----------------------------
 @router.post("/otp/request", operation_id="otp_request")
-async def otp_request(payload: OTPRequest, db: AsyncSession = Depends(get_session)):
+async def otp_request(payload: OTPRequest, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     from sqlalchemy import select
     # Find or create minimal user by phone
     result = await db.execute(select(User).where(User.phone == payload.phone))
@@ -356,7 +355,7 @@ async def otp_request(payload: OTPRequest, db: AsyncSession = Depends(get_sessio
 # OTP-first: verify code and issue token
 # -----------------------------
 @router.post("/otp/verify", operation_id="otp_verify")
-async def otp_verify(payload: OTPVerify, db: AsyncSession = Depends(get_session)):
+async def otp_verify(payload: OTPVerify, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     from sqlalchemy import select
 
     result = await db.execute(select(User).where(User.phone == payload.phone))
@@ -383,7 +382,7 @@ async def otp_verify(payload: OTPVerify, db: AsyncSession = Depends(get_session)
 # 2FA (TOTP)
 # -----------------------------
 @router.post("/me/2fa/setup", response_model=TwoFASetupOut)
-async def setup_2fa(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def setup_2fa(current_user=Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     if current_user.two_factor_enabled and current_user.totp_secret:
         # Return existing provisioning URI
         totp = pyotp.TOTP(current_user.totp_secret)
@@ -398,7 +397,7 @@ async def setup_2fa(current_user=Depends(get_current_user), db: AsyncSession = D
     return TwoFASetupOut(provisioning_uri=uri, secret=secret)
 
 @router.post("/me/2fa/verify")
-async def verify_2fa(payload: TwoFAVerify, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def verify_2fa(payload: TwoFAVerify, current_user=Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     if not current_user.totp_secret:
         raise HTTPException(status_code=400, detail="2FA not initialized")
     totp = pyotp.TOTP(current_user.totp_secret)
@@ -409,7 +408,7 @@ async def verify_2fa(payload: TwoFAVerify, current_user=Depends(get_current_user
     return {"detail": "2FA enabled"}
 
 @router.post("/me/2fa/toggle")
-async def toggle_2fa(payload: TwoFAToggle, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def toggle_2fa(payload: TwoFAToggle, current_user=Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     if payload.enabled and not current_user.totp_secret:
         raise HTTPException(status_code=400, detail="Setup 2FA first")
     await db.execute(update(User).where(User.id == current_user.id).values(two_factor_enabled=payload.enabled, updated_at=datetime.utcnow()))
@@ -420,7 +419,7 @@ async def toggle_2fa(payload: TwoFAToggle, current_user=Depends(get_current_user
 # Sessions management
 # -----------------------------
 @router.get("/me/sessions", response_model=list[dict])
-async def list_sessions(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def list_sessions(current_user=Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     result = await db.execute(select(UserSession).where(UserSession.user_id == current_user.id).order_by(UserSession.created_at.desc()))
     sessions = result.scalars().all()
     return [
@@ -437,7 +436,7 @@ async def list_sessions(current_user=Depends(get_current_user), db: AsyncSession
     ]
 
 @router.post("/me/sessions/{session_id}/revoke")
-async def revoke_session(session_id: int, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def revoke_session(session_id: int, current_user=Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     s = await db.get(UserSession, session_id)
     if not s or s.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -447,7 +446,7 @@ async def revoke_session(session_id: int, current_user=Depends(get_current_user)
     return {"detail": "Session revoked"}
 
 @router.post("/me/sessions/logout-all")
-async def logout_all_sessions(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def logout_all_sessions(current_user=Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     result = await db.execute(select(UserSession).where(UserSession.user_id == current_user.id))
     sessions = result.scalars().all()
     for s in sessions:

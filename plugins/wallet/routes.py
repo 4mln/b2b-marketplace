@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.core.deps import get_current_user
-from app.db.session import get_db_sync
+
 from app.core.security import verify_user_role
 from plugins.auth.models import User
 from . import crud
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.post("/", response_model=WalletOut, status_code=status.HTTP_201_CREATED)
 async def create_wallet(
     wallet: WalletCreate,
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     # Only allow admin or the user themselves to create a wallet
@@ -41,7 +41,7 @@ async def create_wallet(
 @router.get("/user/{user_id}", response_model=UserWallets)
 async def get_user_wallets(
     user_id: int,
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     # Only allow admin or the user themselves to view wallets
@@ -64,7 +64,7 @@ async def get_user_wallets(
 
 @router.get("/me", response_model=UserWallets)
 async def get_my_wallets(
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     wallets = await crud.get_user_wallets(db, current_user.id)
@@ -81,7 +81,7 @@ async def get_my_wallets(
 @router.get("/{wallet_id}", response_model=WalletOut)
 async def get_wallet(
     wallet_id: int,
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     wallet = await crud.get_wallet(db, wallet_id)
@@ -104,7 +104,7 @@ async def get_wallet(
 async def update_wallet(
     wallet_id: int,
     wallet_data: WalletUpdate,
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     wallet = await crud.get_wallet(db, wallet_id)
@@ -126,7 +126,7 @@ async def update_wallet(
 @router.get("/{wallet_id}/transactions", response_model=List[TransactionOut])
 async def get_wallet_transactions(
     wallet_id: int,
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     wallet = await crud.get_wallet(db, wallet_id)
@@ -148,7 +148,7 @@ async def get_wallet_transactions(
 @router.post("/deposit", response_model=TransactionOut)
 async def deposit_funds(
     deposit: DepositRequest,
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     # Find user's wallet for the specified currency
@@ -178,7 +178,7 @@ async def deposit_funds(
 @router.post("/withdraw", response_model=TransactionOut)
 async def withdraw_funds(
     withdrawal: WithdrawalRequest,
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     # Find user's wallet for the specified currency
@@ -208,7 +208,7 @@ async def withdraw_funds(
 @router.post("/transfer", response_model=TransactionOut)
 async def transfer_funds(
     transfer: TransferRequest,
-    db: AsyncSession = Depends(get_db_sync),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
     current_user: User = Depends(get_current_user)
 ):
     # Find sender's wallet

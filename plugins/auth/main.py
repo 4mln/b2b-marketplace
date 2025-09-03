@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from typing import Optional
 
-from app.db.session import get_session
 from app.core.config import settings
 from .models import User
 from .schemas import UserCreate, UserOut, TokenResponse
@@ -21,7 +20,7 @@ from sqlalchemy import update
 router = APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_session)) -> User:
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -40,7 +39,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     return user
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_session)):
+async def register(user_data: UserCreate, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     # Check if user already exists
     existing_user = await db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
@@ -64,7 +63,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_session
     return user
 
 @router.post("/token", response_model=TokenResponse)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_session)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     # Authenticate user
     user = await db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -85,7 +84,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     return create_token_pair(token_data)
 
 @router.post("/send-otp")
-async def send_otp(phone: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def send_otp(phone: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     otp = str(random.randint(100000, 999999))
     expiry = datetime.now() + timedelta(minutes=10)
     await db.execute(update(User).where(User.id == current_user.id).values(otp_code=otp, otp_expiry=expiry))
@@ -96,7 +95,7 @@ async def send_otp(phone: str, current_user: User = Depends(get_current_user), d
     return {"message": "OTP sent"}
 
 @router.post("/verify-otp")
-async def verify_otp(otp: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def verify_otp(otp: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     if current_user.otp_code != otp or current_user.otp_expiry < datetime.now():
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     await db.execute(update(User).where(User.id == current_user.id).values(kyc_status="otp_verified", otp_code=None, otp_expiry=None))
@@ -104,7 +103,7 @@ async def verify_otp(otp: str, current_user: User = Depends(get_current_user), d
     return {"message": "OTP verified"}
 
 @router.post("/upload-document")
-async def upload_document(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def upload_document(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     if current_user.kyc_status != "otp_verified":
         raise HTTPException(status_code=400, detail="Complete OTP verification first")
     path = f"documents/{current_user.id}_{file.filename}"
@@ -115,7 +114,7 @@ async def upload_document(file: UploadFile = File(...), current_user: User = Dep
     return {"message": "Document uploaded and KYC completed"}
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(refresh_token: str, db: AsyncSession = Depends(get_session)):
+async def refresh_token(refresh_token: str, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     try:
         payload = verify_token(refresh_token, HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -20,7 +20,7 @@ router = APIRouter()
 async def create_rfq_endpoint(
     payload: RFQCreate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ):
     await enforce_rfq_limit(user.id, db)
     # Spam throttle: simple rate limit based on recent RFQs
@@ -34,7 +34,7 @@ async def create_rfq_endpoint(
 
 
 @router.get("/rfqs", response_model=list[RFQOut])
-async def list_rfqs_endpoint(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_session)):
+async def list_rfqs_endpoint(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     rfqs = await crud.list_rfqs(db)
     visible: list = []
     for r in rfqs:
@@ -53,7 +53,7 @@ async def list_rfqs_endpoint(current_user: User = Depends(get_current_user), db:
 async def create_quote_endpoint(
     payload: QuoteCreate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ):
     # Enforce private visibility: only invited sellers can quote
     rfq = await db.get(crud.RFQ, payload.rfq_id)  # type: ignore[attr-defined]
@@ -68,7 +68,7 @@ async def create_quote_endpoint(
 
 
 @router.get("/rfqs/{rfq_id}/quotes", response_model=list[QuoteOut])
-async def list_quotes_for_rfq_endpoint(rfq_id: int, db: AsyncSession = Depends(get_session)):
+async def list_quotes_for_rfq_endpoint(rfq_id: int, db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):
     quotes = await crud.list_quotes_for_rfq(db, rfq_id)
     # sort by seller reputation desc
     scored: list[tuple[float, any]] = []
@@ -83,7 +83,7 @@ async def list_quotes_for_rfq_endpoint(rfq_id: int, db: AsyncSession = Depends(g
 async def suggest_sellers_for_rfq(
     rfq_id: int,
     limit: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
 ):
     """Suggest relevant sellers for an RFQ by simple heuristics:
     - Match on buyer's guild via products.seller join if available later (placeholder)
