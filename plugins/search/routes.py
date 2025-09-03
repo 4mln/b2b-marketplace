@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
 
-from app.db.session import get_db_sync  # Or get_db if async
 from app.core.auth import get_current_user_sync as get_current_user, get_current_user_optional_sync as get_current_user_optional
 from plugins.auth.models import User
 from . import crud, schemas
@@ -16,12 +15,18 @@ from .schemas import SearchIndexType, FilterType, SortField, SortOrder
 router = APIRouter(prefix="/search", tags=["search"])
 
 
+# Lazy generator-style DB dependency to avoid circular imports
+def db_dep():
+    from app.db.session import get_db_sync
+    yield from get_db_sync()
+
+
 # Core Search Routes
 @router.post("/", response_model=schemas.SearchResponse)
 def search(
     search_request: schemas.SearchRequest,
     request: Request,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """Perform a search query"""
@@ -49,7 +54,7 @@ def search(
 def advanced_search(
     search_request: schemas.AdvancedSearchRequest,
     request: Request,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """Perform an advanced search with multiple filters"""
@@ -94,7 +99,7 @@ def get_suggestions(
     query: str = Query(..., min_length=1),
     search_type: Optional[SearchIndexType] = None,
     limit: int = Query(10, ge=1, le=50),
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync)
+    db: Session = Depends(db_dep)
 ):
     """Get search suggestions for autocomplete"""
     return crud.get_search_suggestions(db, query, search_type.value if search_type else None, limit)
@@ -105,7 +110,7 @@ def get_facets(
     search_type: Optional[SearchIndexType] = None,
     filters: Optional[str] = None,  # JSON string of filters
     facet_fields: Optional[str] = None,  # JSON string of facet fields
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync)
+    db: Session = Depends(db_dep)
 ):
     """Get search facets for filtering"""
     # Parse filters and facet fields from JSON strings
@@ -141,7 +146,7 @@ def get_facets(
 @router.post("/index", response_model=schemas.SearchIndexResponse)
 def create_search_index(
     index_request: schemas.SearchIndexRequest,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create or update search index for entities"""
@@ -159,7 +164,7 @@ def get_search_indexes(
     limit: int = Query(100, ge=1, le=1000),
     entity_type: Optional[SearchIndexType] = None,
     status: Optional[str] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search indexes"""
@@ -182,7 +187,7 @@ def get_search_indexes(
 @router.get("/index/{index_id}", response_model=schemas.SearchIndexOut)
 def get_search_index(
     index_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search index by ID"""
@@ -197,7 +202,7 @@ def get_search_index(
 def update_search_index(
     index_id: int,
     index_data: schemas.SearchIndexUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update search index"""
@@ -211,7 +216,7 @@ def update_search_index(
 @router.delete("/index/{index_id}")
 def delete_search_index(
     index_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Delete search index"""
@@ -229,7 +234,7 @@ def get_search_queries(
     limit: int = Query(100, ge=1, le=1000),
     search_type: Optional[str] = None,
     user_id: Optional[int] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search query history"""
@@ -253,7 +258,7 @@ def get_search_queries(
 def update_search_query(
     query_id: int,
     query_data: schemas.SearchQueryUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update search query with analytics data"""
@@ -268,7 +273,7 @@ def update_search_query(
 @router.post("/filters", response_model=schemas.SearchFilterOut)
 def create_search_filter(
     filter_data: schemas.SearchFilterCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new search filter"""
@@ -279,7 +284,7 @@ def create_search_filter(
 def get_search_filters(
     entity_types: Optional[str] = None,  # JSON string of entity types
     is_active: Optional[bool] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(db_dep)
 ):
     """Get search filters"""
     parsed_entity_types = None
@@ -303,7 +308,7 @@ def get_search_filters(
 def update_search_filter(
     filter_id: int,
     filter_data: schemas.SearchFilterUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update search filter"""
@@ -318,7 +323,7 @@ def update_search_filter(
 @router.post("/suggestions", response_model=schemas.SearchSuggestionOut)
 def create_search_suggestion(
     suggestion_data: schemas.SearchSuggestionCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new search suggestion"""
@@ -331,7 +336,7 @@ def get_search_suggestions_manage(
     limit: int = Query(100, ge=1, le=1000),
     suggestion_type: Optional[str] = None,
     is_active: Optional[bool] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search suggestions for management"""
@@ -355,7 +360,7 @@ def get_search_suggestions_manage(
 def update_search_suggestion(
     suggestion_id: int,
     suggestion_data: schemas.SearchSuggestionUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update search suggestion"""
@@ -373,7 +378,7 @@ def get_search_analytics(
     end_date: datetime = Query(default_factory=lambda: datetime.utcnow()),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search analytics"""
@@ -397,7 +402,7 @@ def get_search_analytics(
 def get_search_analytics_summary(
     start_date: datetime = Query(default_factory=lambda: datetime.utcnow() - timedelta(days=30)),
     end_date: datetime = Query(default_factory=lambda: datetime.utcnow()),
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search analytics summary"""
@@ -408,7 +413,7 @@ def get_search_analytics_summary(
 @router.post("/synonyms", response_model=schemas.SearchSynonymOut)
 def create_search_synonym(
     synonym_data: schemas.SearchSynonymCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new search synonym"""
@@ -421,7 +426,7 @@ def get_search_synonyms(
     limit: int = Query(100, ge=1, le=1000),
     language: Optional[str] = None,
     entity_type: Optional[str] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search synonyms"""
@@ -445,7 +450,7 @@ def get_search_synonyms(
 def update_search_synonym(
     synonym_id: int,
     synonym_data: schemas.SearchSynonymUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update search synonym"""
@@ -460,7 +465,7 @@ def update_search_synonym(
 @router.post("/blacklist", response_model=schemas.SearchBlacklistOut)
 def create_search_blacklist(
     blacklist_data: schemas.SearchBlacklistCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new search blacklist entry"""
@@ -473,7 +478,7 @@ def get_search_blacklist(
     limit: int = Query(100, ge=1, le=1000),
     language: Optional[str] = None,
     entity_type: Optional[str] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search blacklist"""
@@ -497,7 +502,7 @@ def get_search_blacklist(
 def update_search_blacklist(
     blacklist_id: int,
     blacklist_data: schemas.SearchBlacklistUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update search blacklist entry"""
@@ -512,7 +517,7 @@ def update_search_blacklist(
 @router.post("/boosts", response_model=schemas.SearchBoostOut)
 def create_search_boost(
     boost_data: schemas.SearchBoostCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new search boost rule"""
@@ -525,7 +530,7 @@ def get_search_boosts(
     limit: int = Query(100, ge=1, le=1000),
     boost_type: Optional[str] = None,
     entity_types: Optional[str] = None,  # JSON string of entity types
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search boosts"""
@@ -557,7 +562,7 @@ def get_search_boosts(
 def update_search_boost(
     boost_id: int,
     boost_data: schemas.SearchBoostUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update search boost rule"""
@@ -573,7 +578,7 @@ def update_search_boost(
 def check_blacklist(
     term: str,
     language: str = Query("en"),
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Check if a term is blacklisted"""
@@ -586,7 +591,7 @@ def get_term_synonyms(
     term: str,
     language: str = Query("en"),
     entity_type: Optional[str] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get synonyms for a specific term"""
@@ -597,7 +602,7 @@ def get_term_synonyms(
 # Search Performance Routes
 @router.get("/performance", response_model=schemas.SearchPerformanceMetrics)
 def get_search_performance(
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search performance metrics"""
@@ -616,7 +621,7 @@ def get_search_performance(
 @router.get("/trends", response_model=List[schemas.SearchTrends])
 def get_search_trends(
     days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get search trends over time"""

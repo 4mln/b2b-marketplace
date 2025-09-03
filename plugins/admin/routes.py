@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 
-from app.db.session import get_db_sync, get_db  # get_db is alias for get_db_sync
 from app.core.auth import get_current_user_sync as get_current_user
 from plugins.auth.models import User
 from . import crud, schemas
@@ -19,10 +18,17 @@ from plugins.payments.crud import list_withdrawal_requests, update_withdrawal_st
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+# Lazy generator-style DB dependency to avoid circular imports
+def db_dep():
+    from app.db.session import get_db_sync
+    # Delegate to the existing dependency generator
+    yield from get_db_sync()
+
+
 # Admin Authentication and Authorization
 def require_admin_permission(permission: AdminPermission):
     """Decorator to require specific admin permission"""
-    def permission_checker(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    def permission_checker(current_user: User = Depends(get_current_user), db: Session = Depends(db_dep)):
         admin_user = crud.get_admin_user_by_user_id(db, current_user.id)
         if not admin_user or not admin_user.is_active:
             raise HTTPException(status_code=403, detail="Admin access required")
@@ -36,7 +42,7 @@ def require_admin_permission(permission: AdminPermission):
 
 def require_admin_role(role: AdminRole):
     """Decorator to require specific admin role"""
-    def role_checker(current_user: User = Depends(get_current_user), db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync)):
+    def role_checker(current_user: User = Depends(get_current_user), db: Session = Depends(db_dep)):
         admin_user = crud.get_admin_user_by_user_id(db, current_user.id)
         if not admin_user or not admin_user.is_active:
             raise HTTPException(status_code=403, detail="Admin access required")
@@ -51,7 +57,7 @@ def require_admin_role(role: AdminRole):
 # Dashboard Overview Routes
 @router.get("/dashboard/overview", response_model=schemas.DashboardOverview)
 def get_dashboard_overview(
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Get dashboard overview statistics"""
@@ -60,7 +66,7 @@ def get_dashboard_overview(
 
 @router.get("/dashboard/user-stats", response_model=schemas.UserManagementStats)
 def get_user_management_stats(
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_USERS))
 ):
     """Get user management statistics"""
@@ -69,7 +75,7 @@ def get_user_management_stats(
 
 @router.get("/dashboard/financial-stats", response_model=schemas.FinancialStats)
 def get_financial_stats(
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_FINANCIAL_REPORTS))
 ):
     """Get financial statistics"""
@@ -78,7 +84,7 @@ def get_financial_stats(
 
 @router.get("/dashboard/content-stats", response_model=schemas.ContentModerationStats)
 def get_content_moderation_stats(
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.MODERATE_PRODUCTS))
 ):
     """Get content moderation statistics"""
@@ -87,7 +93,7 @@ def get_content_moderation_stats(
 
 @router.get("/dashboard/system-health", response_model=schemas.SystemHealthStats)
 def get_system_health_stats(
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Get system health statistics"""
@@ -98,7 +104,7 @@ def get_system_health_stats(
 @router.post("/users", response_model=schemas.AdminUserOut)
 def create_admin_user(
     admin_data: schemas.AdminUserCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_role(AdminRole.SUPER_ADMIN))
 ):
     """Create a new admin user (Super Admin only)"""
@@ -116,7 +122,7 @@ def get_admin_users(
     limit: int = Query(100, ge=1, le=1000),
     role: Optional[AdminRole] = None,
     is_active: Optional[bool] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_USERS))
 ):
     """Get admin users"""
@@ -132,7 +138,7 @@ def get_admin_users(
 @router.get("/users/{admin_id}", response_model=schemas.AdminUserOut)
 def get_admin_user(
     admin_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_USERS))
 ):
     """Get admin user by ID"""
@@ -147,7 +153,7 @@ def get_admin_user(
 def update_admin_user(
     admin_id: int,
     admin_data: schemas.AdminUserUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_role(AdminRole.SUPER_ADMIN))
 ):
     """Update admin user (Super Admin only)"""
@@ -161,7 +167,7 @@ def update_admin_user(
 @router.delete("/users/{admin_id}")
 def delete_admin_user(
     admin_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_role(AdminRole.SUPER_ADMIN))
 ):
     """Delete admin user (Super Admin only)"""
@@ -179,7 +185,7 @@ def get_admin_actions(
     limit: int = Query(100, ge=1, le=1000),
     action_type: Optional[AdminActionType] = None,
     status: Optional[AdminActionStatus] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_AUDIT_LOGS))
 ):
     """Get admin actions"""
@@ -198,7 +204,7 @@ def get_my_admin_actions(
     limit: int = Query(100, ge=1, le=1000),
     action_type: Optional[AdminActionType] = None,
     status: Optional[AdminActionStatus] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_AUDIT_LOGS))
 ):
     """Get current admin's actions"""
@@ -215,7 +221,7 @@ def get_my_admin_actions(
 @router.post("/config", response_model=schemas.SystemConfigOut)
 def create_system_config(
     config_data: schemas.SystemConfigCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.CONFIGURE_SYSTEM))
 ):
     """Create a new system configuration"""
@@ -233,7 +239,7 @@ def get_system_configs(
     limit: int = Query(100, ge=1, le=1000),
     category: Optional[str] = None,
     is_public: Optional[bool] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.CONFIGURE_SYSTEM))
 ):
     """Get system configurations"""
@@ -249,7 +255,7 @@ def get_system_configs(
 @router.get("/config/{config_id}", response_model=schemas.SystemConfigOut)
 def get_system_config(
     config_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.CONFIGURE_SYSTEM))
 ):
     """Get system configuration by ID"""
@@ -264,7 +270,7 @@ def get_system_config(
 def update_system_config(
     config_id: int,
     config_data: schemas.SystemConfigUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.CONFIGURE_SYSTEM))
 ):
     """Update system configuration"""
@@ -278,7 +284,7 @@ def update_system_config(
 @router.delete("/config/{config_id}")
 def delete_system_config(
     config_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.CONFIGURE_SYSTEM))
 ):
     """Delete system configuration"""
@@ -301,7 +307,7 @@ def get_audit_logs(
     target_type: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_AUDIT_LOGS))
 ):
     """Get audit logs"""
@@ -328,7 +334,7 @@ def get_audit_logs(
 @router.post("/support/tickets", response_model=schemas.SupportTicketOut)
 def create_support_ticket(
     ticket_data: schemas.SupportTicketCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new support ticket"""
@@ -343,7 +349,7 @@ def get_support_tickets(
     priority: Optional[str] = None,
     category: Optional[str] = None,
     assigned_admin_id: Optional[int] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.MANAGE_TICKETS))
 ):
     """Get support tickets"""
@@ -359,7 +365,7 @@ def get_support_tickets(
 @router.get("/support/tickets/{ticket_id}", response_model=schemas.SupportTicketOut)
 def get_support_ticket(
     ticket_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.MANAGE_TICKETS))
 ):
     """Get support ticket by ID"""
@@ -374,7 +380,7 @@ def get_support_ticket(
 def update_support_ticket(
     ticket_id: int,
     ticket_data: schemas.SupportTicketUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.MANAGE_TICKETS))
 ):
     """Update support ticket"""
@@ -389,7 +395,7 @@ def update_support_ticket(
 def add_support_message(
     ticket_id: int,
     message_data: schemas.SupportMessageCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.RESPOND_TO_SUPPORT))
 ):
     """Add message to support ticket"""
@@ -400,7 +406,7 @@ def add_support_message(
 @router.post("/moderation", response_model=schemas.ContentModerationOut)
 def create_content_moderation(
     moderation_data: schemas.ContentModerationCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new content moderation entry"""
@@ -414,7 +420,7 @@ def get_content_moderations(
     content_type: Optional[str] = None,
     status: Optional[str] = None,
     assigned_admin_id: Optional[int] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.MODERATE_PRODUCTS))
 ):
     """Get content moderations"""
@@ -431,7 +437,7 @@ def get_content_moderations(
 def update_content_moderation(
     moderation_id: int,
     moderation_data: schemas.ContentModerationUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.MODERATE_PRODUCTS))
 ):
     """Update content moderation"""
@@ -446,7 +452,7 @@ def update_content_moderation(
 @router.post("/dashboards", response_model=schemas.AdminDashboardOut)
 def create_admin_dashboard(
     dashboard_data: schemas.AdminDashboardCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Create a new admin dashboard"""
@@ -457,7 +463,7 @@ def create_admin_dashboard(
 def get_admin_dashboards(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Get admin dashboards"""
@@ -468,7 +474,7 @@ def get_admin_dashboards(
 @router.get("/dashboards/{dashboard_id}", response_model=schemas.AdminDashboardOut)
 def get_admin_dashboard(
     dashboard_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Get admin dashboard by ID"""
@@ -487,7 +493,7 @@ def get_admin_dashboard(
 def update_admin_dashboard(
     dashboard_id: int,
     dashboard_data: schemas.AdminDashboardUpdate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Update admin dashboard"""
@@ -509,7 +515,7 @@ def get_admin_notifications(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     is_read: Optional[bool] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Get admin notifications"""
@@ -525,7 +531,7 @@ def get_admin_notifications(
 @router.patch("/notifications/{notification_id}/read", response_model=schemas.AdminNotificationOut)
 def mark_notification_read(
     notification_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Mark notification as read"""
@@ -540,7 +546,7 @@ def mark_notification_read(
 @router.post("/security/blocklist", response_model=schemas.IPBlocklistOut)
 def add_ip_to_blocklist(
     blocklist_data: schemas.IPBlocklistCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.BLOCK_IPS))
 ):
     """Add IP to blocklist"""
@@ -552,7 +558,7 @@ def get_ip_blocklist(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     block_type: Optional[str] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.BLOCK_IPS))
 ):
     """Get IP blocklist"""
@@ -568,7 +574,7 @@ def get_ip_blocklist(
 @router.delete("/security/blocklist/{blocklist_id}")
 def remove_ip_from_blocklist(
     blocklist_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.BLOCK_IPS))
 ):
     """Remove IP from blocklist"""
@@ -583,7 +589,7 @@ def remove_ip_from_blocklist(
 @router.post("/reports", response_model=schemas.AdminReportOut)
 def create_admin_report(
     report_data: schemas.AdminReportCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_REPORTS))
 ):
     """Create a new admin report"""
@@ -595,7 +601,7 @@ def get_admin_reports(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     status: Optional[str] = None,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_REPORTS))
 ):
     """Get admin reports"""
@@ -611,7 +617,7 @@ def get_admin_reports(
 @router.get("/reports/{report_id}", response_model=schemas.AdminReportOut)
 def get_admin_report(
     report_id: int,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_REPORTS))
 ):
     """Get admin report by ID"""
@@ -630,7 +636,7 @@ def get_admin_report(
 @router.post("/bulk/users", response_model=Dict[str, Any])
 def bulk_user_action(
     bulk_action: schemas.BulkUserAction,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.EDIT_USERS))
 ):
     """Perform bulk action on users"""
@@ -640,7 +646,7 @@ def bulk_user_action(
 @router.post("/bulk/content", response_model=Dict[str, Any])
 def bulk_content_action(
     bulk_action: schemas.BulkContentAction,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.MODERATE_PRODUCTS))
 ):
     """Perform bulk action on content"""
@@ -651,7 +657,7 @@ def bulk_content_action(
 @router.post("/export", response_model=schemas.ExportResponse)
 def create_export_request(
     export_request: schemas.ExportRequest,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.EXPORT_DATA))
 ):
     """Create export request"""
@@ -661,7 +667,7 @@ def create_export_request(
 @router.get("/export/{export_id}", response_model=schemas.ExportResponse)
 def get_export_status(
     export_id: str,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.EXPORT_DATA))
 ):
     """Get export status"""
@@ -680,7 +686,7 @@ def get_system_metrics(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Get system metrics"""
@@ -690,7 +696,7 @@ def get_system_metrics(
 @router.post("/metrics", response_model=schemas.SystemMetricsOut)
 def create_system_metric(
     metric_data: schemas.SystemMetricsCreate,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_ANALYTICS))
 ):
     """Create a new system metric"""
@@ -701,7 +707,7 @@ def create_system_metric(
 @router.get("/permissions/check/{permission}", response_model=schemas.PermissionCheck)
 def check_permission(
     permission: AdminPermission,
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_USERS))
 ):
     """Check if current admin has specific permission"""
@@ -720,7 +726,7 @@ def admin_search(
     search_type: str = Query(..., regex="^(users|products|orders|payments|tickets)$"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync),
+    db: Session = Depends(db_dep),
     admin_user: schemas.AdminUserOut = Depends(require_admin_permission(AdminPermission.VIEW_USERS))
 ):
     """Search across different entities"""

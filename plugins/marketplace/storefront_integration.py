@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, List
 
-from app.core.deps import get_db, get_current_user
+from app.core.deps import get_current_user
 from plugins.auth.models import User
 from plugins.wallet.integrations import process_marketplace_payment, process_marketplace_cashback, has_sufficient_funds
 
@@ -132,7 +132,7 @@ router = APIRouter()
 @router.post("/orders/", response_model=OrderOut)
 async def create_order(
     order: OrderCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
     current_user: User = Depends(get_current_user)
 ):
     # Calculate order total with potential discounts

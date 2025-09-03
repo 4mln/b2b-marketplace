@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 import json
 import time
 
-from app.db.session import get_db, get_db_sync
 from app.core.auth import get_current_user_sync as get_current_user, get_current_user_optional_sync as get_current_user_optional
 from plugins.auth.models import User
 from . import crud
@@ -37,11 +36,17 @@ from .schemas import (
 router = APIRouter(prefix="/mobile", tags=["mobile"])
 
 
+# Lazy generator-style DB dependency to avoid circular imports
+def db_dep():
+    from app.db.session import get_db_sync
+    yield from get_db_sync()
+
+
 # Mobile App Session Routes
 @router.post("/sessions", response_model=MobileSessionResponse)
 def create_mobile_session(
     session_request: MobileSessionRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Create a new mobile app session"""
@@ -58,7 +63,7 @@ def create_mobile_session(
 @router.get("/sessions/{session_id}", response_model=MobileAppSessionOut)
 def get_mobile_session(
     session_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get mobile session by ID"""
@@ -72,7 +77,7 @@ def get_mobile_session(
 def update_mobile_session(
     session_id: str,
     session_data: MobileAppSessionUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Update mobile session"""
@@ -85,7 +90,7 @@ def update_mobile_session(
 @router.delete("/sessions/{session_id}")
 def deactivate_mobile_session(
     session_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Deactivate mobile session"""
@@ -99,7 +104,7 @@ def deactivate_mobile_session(
 def get_user_mobile_sessions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get current user's mobile sessions"""
@@ -116,7 +121,7 @@ def get_user_mobile_sessions(
 @router.post("/cache", response_model=CacheResponse)
 def create_cache_entry(
     cache_request: CacheRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Create cache entry"""
@@ -156,7 +161,7 @@ def create_cache_entry(
 @router.get("/cache/{cache_key}", response_model=CacheResponse)
 def get_cache_entry(
     cache_key: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get cache entry by key"""
@@ -178,7 +183,7 @@ def get_cache_entry(
 @router.delete("/cache/{cache_key}")
 def delete_cache_entry(
     cache_key: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Delete cache entry"""
@@ -190,7 +195,7 @@ def delete_cache_entry(
 
 @router.post("/cache/cleanup")
 def cleanup_expired_cache(
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Clean up expired cache entries"""
@@ -202,7 +207,7 @@ def cleanup_expired_cache(
 @router.post("/config", response_model=MobileAppConfigOut)
 def create_app_config(
     config_data: MobileAppConfigCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create mobile app configuration"""
@@ -213,7 +218,7 @@ def create_app_config(
 def get_app_config(
     platform: str,
     app_version: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get app configuration for platform and version"""
@@ -226,7 +231,7 @@ def get_app_config(
 @router.get("/config/{platform}/latest", response_model=MobileAppConfigOut)
 def get_latest_app_config(
     platform: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get latest app configuration for platform"""
@@ -240,7 +245,7 @@ def get_latest_app_config(
 def update_app_config(
     config_id: int,
     config_data: MobileAppConfigUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update app configuration"""
@@ -254,7 +259,7 @@ def update_app_config(
 @router.post("/feature-flags", response_model=MobileFeatureFlagOut)
 def create_feature_flag(
     flag_data: MobileFeatureFlagCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create feature flag"""
@@ -268,7 +273,7 @@ def check_feature_flag(
     app_version: Optional[str] = Query(None),
     platform: Optional[str] = Query(None),
     user_segments: Optional[List[str]] = Query(None),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Check if feature flag is enabled"""
@@ -282,7 +287,7 @@ def check_feature_flag(
 def get_feature_flags(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get feature flags"""
@@ -301,7 +306,7 @@ def get_feature_flags(
 def update_feature_flag(
     flag_id: int,
     flag_data: MobileFeatureFlagUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update feature flag"""
@@ -316,7 +321,7 @@ def update_feature_flag(
 def create_performance_metric(
     metric_request: PerformanceMetricRequest,
     session_id: str = Query(..., description="Mobile session ID"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Create performance metric"""
@@ -337,7 +342,7 @@ def get_session_performance_metrics(
     metric_type: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get performance metrics for session"""
@@ -360,7 +365,7 @@ def get_session_performance_metrics(
 def get_performance_summary(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get performance summary for date range"""
@@ -372,7 +377,7 @@ def get_performance_summary(
 def create_offline_action(
     action_request: OfflineActionRequest,
     session_id: str = Query(..., description="Mobile session ID"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Create offline action"""
@@ -393,7 +398,7 @@ def get_session_offline_actions(
     status: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get offline actions for session"""
@@ -415,7 +420,7 @@ def get_session_offline_actions(
 @router.post("/offline-queue/{session_id}/process")
 def process_offline_actions(
     session_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Process pending offline actions for session"""
@@ -431,7 +436,7 @@ def process_offline_actions(
 def get_offline_queue_summary(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get offline queue summary for date range"""
@@ -443,7 +448,7 @@ def get_offline_queue_summary(
 def create_push_notification(
     notification_request: PushNotificationRequest,
     session_id: str = Query(..., description="Mobile session ID"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Create push notification"""
@@ -464,7 +469,7 @@ def get_session_push_notifications(
     status: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get push notifications for session"""
@@ -487,7 +492,7 @@ def get_session_push_notifications(
 def get_push_notification_summary(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get push notification summary for date range"""
@@ -499,7 +504,7 @@ def get_push_notification_summary(
 def sync_data(
     sync_request: SyncRequest,
     session_id: str = Query(..., description="Mobile session ID"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Sync data for entity type"""
@@ -514,7 +519,7 @@ def sync_data(
 def get_sync_state(
     session_id: str,
     entity_type: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get sync state for session and entity type"""
@@ -533,7 +538,7 @@ def get_sync_state(
 def get_api_analytics(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get API analytics for date range"""
@@ -544,7 +549,7 @@ def get_api_analytics(
 @router.get("/health/{session_id}", response_model=MobileHealthCheck)
 def get_mobile_health_check(
     session_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get mobile app health check"""
@@ -624,7 +629,7 @@ def decompress_data_endpoint(
 @router.post("/cleanup/sessions")
 def cleanup_inactive_sessions(
     days: int = Query(30, ge=1, le=365, description="Days to keep"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Clean up inactive sessions"""
@@ -638,7 +643,7 @@ def get_optimized_products(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     session_id: str = Query(..., description="Mobile session ID"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get optimized product list for mobile"""
@@ -659,7 +664,7 @@ def get_optimized_products(
 def get_optimized_search(
     query: str = Query(..., description="Search query"),
     session_id: str = Query(..., description="Mobile session ID"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get optimized search results for mobile"""
@@ -676,7 +681,7 @@ def get_optimized_search(
 @router.get("/dashboard/mobile")
 def get_mobile_dashboard(
     session_id: str = Query(..., description="Mobile session ID"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user_optional)
 ):
     """Get mobile-optimized dashboard data"""

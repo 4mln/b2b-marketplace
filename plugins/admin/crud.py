@@ -2,7 +2,6 @@
 Admin Dashboard System CRUD Operations
 Comprehensive administrative capabilities for the B2B marketplace
 """
-from app.db.session import get_db_sync  # Or get_db if async
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_, func, desc, asc
 from typing import List, Optional, Dict, Any, Tuple
