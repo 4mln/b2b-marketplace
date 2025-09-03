@@ -8,7 +8,6 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 import json
 
-from app.db.session import get_db
 from app.core.auth import get_current_user_sync as get_current_user
 from plugins.auth.models import User
 from . import crud
@@ -26,11 +25,17 @@ from .schemas import (
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
+# Lazy generator-style DB dependency to avoid circular imports
+def db_dep():
+    from app.db.session import get_db_sync
+    yield from get_db_sync()
+
+
 # Analytics Events
 @router.post("/events", response_model=AnalyticsEventOut)
 def create_analytics_event(
     event_data: AnalyticsEventCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create an analytics event"""
@@ -40,7 +45,7 @@ def create_analytics_event(
 @router.get("/events/{event_id}", response_model=AnalyticsEventOut)
 def get_analytics_event(
     event_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get analytics event by ID"""
@@ -60,7 +65,7 @@ def get_analytics_events(
     entity_id: Optional[int] = Query(None),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get analytics events with filtering"""
@@ -79,7 +84,7 @@ def get_analytics_events(
 @router.post("/query", response_model=AnalyticsQueryResponse)
 def query_analytics(
     query_request: AnalyticsQueryRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Advanced analytics query"""
@@ -93,7 +98,7 @@ def get_business_metrics(
     end_date: datetime = Query(..., description="End date"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get business metrics for date range"""
@@ -105,7 +110,7 @@ def get_business_metrics(
 def get_business_metrics_summary(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get business metrics summary"""
@@ -120,7 +125,7 @@ def get_user_analytics(
     end_date: datetime = Query(..., description="End date"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get user analytics for date range"""
@@ -134,7 +139,7 @@ def get_my_analytics(
     end_date: datetime = Query(..., description="End date"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get current user's analytics"""
@@ -150,7 +155,7 @@ def get_seller_analytics(
     end_date: datetime = Query(..., description="End date"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get seller analytics for date range"""
@@ -166,7 +171,7 @@ def get_product_analytics(
     end_date: datetime = Query(..., description="End date"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get product analytics for date range"""
@@ -182,7 +187,7 @@ def get_financial_reports(
     report_type: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get financial reports for date range"""
@@ -199,7 +204,7 @@ def get_performance_metrics(
     metric_name: Optional[str] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get performance metrics for date range"""
@@ -211,7 +216,7 @@ def get_performance_metrics(
 def get_performance_summary(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get performance summary"""
@@ -222,7 +227,7 @@ def get_performance_summary(
 @router.post("/templates", response_model=ReportTemplateOut)
 def create_report_template(
     template_data: ReportTemplateCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create report template"""
@@ -232,7 +237,7 @@ def create_report_template(
 @router.get("/templates/{template_id}", response_model=ReportTemplateOut)
 def get_report_template(
     template_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get report template by ID"""
@@ -248,7 +253,7 @@ def get_report_templates(
     is_active: Optional[bool] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get report templates with filtering"""
@@ -260,7 +265,7 @@ def get_report_templates(
 def update_report_template(
     template_id: int,
     template_data: ReportTemplateUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update report template"""
@@ -273,7 +278,7 @@ def update_report_template(
 @router.delete("/templates/{template_id}")
 def delete_report_template(
     template_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Delete report template"""
@@ -287,7 +292,7 @@ def delete_report_template(
 @router.post("/scheduled-reports", response_model=ScheduledReportOut)
 def create_scheduled_report(
     report_data: ScheduledReportCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create scheduled report"""
@@ -299,7 +304,7 @@ def get_scheduled_reports(
     is_active: Optional[bool] = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get scheduled reports"""
@@ -311,7 +316,7 @@ def get_scheduled_reports(
 def update_scheduled_report(
     report_id: int,
     report_data: ScheduledReportUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update scheduled report"""
@@ -324,7 +329,7 @@ def update_scheduled_report(
 @router.delete("/scheduled-reports/{report_id}")
 def delete_scheduled_report(
     report_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Delete scheduled report"""
@@ -338,7 +343,7 @@ def delete_scheduled_report(
 @router.get("/executions/{execution_id}", response_model=ReportExecutionOut)
 def get_report_execution(
     execution_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get report execution by ID"""
@@ -352,7 +357,7 @@ def get_report_execution(
 def generate_report(
     request: ReportGenerationRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Generate a report"""
@@ -363,7 +368,7 @@ def generate_report(
 @router.post("/dashboards", response_model=DashboardOut)
 def create_dashboard(
     dashboard_data: DashboardCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create dashboard"""
@@ -373,7 +378,7 @@ def create_dashboard(
 @router.get("/dashboards/{dashboard_id}", response_model=DashboardOut)
 def get_dashboard(
     dashboard_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get dashboard by ID"""
@@ -387,7 +392,7 @@ def get_dashboard(
 def get_user_dashboards(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get current user's dashboards"""
@@ -399,7 +404,7 @@ def get_user_dashboards(
 def update_dashboard(
     dashboard_id: int,
     dashboard_data: DashboardUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Update dashboard"""
@@ -412,7 +417,7 @@ def update_dashboard(
 @router.delete("/dashboards/{dashboard_id}")
 def delete_dashboard(
     dashboard_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Delete dashboard"""
@@ -427,7 +432,7 @@ def delete_dashboard(
 def create_data_export(
     export_data: DataExportCreate,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Create data export request"""
@@ -437,7 +442,7 @@ def create_data_export(
 @router.get("/exports/{export_id}", response_model=DataExportOut)
 def get_data_export(
     export_id: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get data export by ID"""
@@ -451,7 +456,7 @@ def get_data_export(
 def get_user_exports(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get current user's data exports"""
@@ -462,7 +467,7 @@ def get_user_exports(
 # Real-time Analytics
 @router.get("/real-time", response_model=RealTimeMetrics)
 def get_real_time_metrics(
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get real-time metrics"""
@@ -481,7 +486,7 @@ def track_event(
     session_id: Optional[str] = None,
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Track an analytics event"""
@@ -501,7 +506,7 @@ def track_event(
 @router.post("/calculate-daily-metrics")
 def calculate_daily_metrics(
     date: datetime = Query(..., description="Date to calculate metrics for"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Calculate daily business metrics"""
@@ -512,7 +517,7 @@ def calculate_daily_metrics(
 @router.post("/cleanup")
 def cleanup_old_analytics(
     days: int = Query(90, ge=1, le=365, description="Days to keep"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Clean up old analytics data"""
@@ -525,7 +530,7 @@ def cleanup_old_analytics(
 def get_analytics_overview(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get analytics dashboard overview"""
@@ -545,7 +550,7 @@ def get_analytics_overview(
 def get_user_activity_analytics(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get user activity analytics"""
@@ -576,7 +581,7 @@ def get_user_activity_analytics(
 def get_seller_performance_analytics(
     start_date: datetime = Query(..., description="Start date"),
     end_date: datetime = Query(..., description="End date"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(db_dep),
     current_user: User = Depends(get_current_user)
 ):
     """Get seller performance analytics"""
