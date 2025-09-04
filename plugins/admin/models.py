@@ -251,7 +251,7 @@ class SystemMetrics(Base):
     metric_unit = Column(String(50), nullable=True)
     category = Column(String(100), nullable=True)  # performance, security, business, etc.
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
-    metadata = Column(JSON, nullable=True)  # Additional metric data
+    extra_metadata = Column("metadata", JSON, nullable=True)  # Additional metric data
 
 
 class AdminDashboard(Base):

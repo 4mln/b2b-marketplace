@@ -351,7 +351,7 @@ class PerformanceMetrics(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     # Additional data
-    metadata = Column(JSON, nullable=True)
+    extra_metadata = Column("metadata", JSON, nullable=True)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -10,7 +10,10 @@ import json
 import hashlib
 import uuid
 import gzip
-import brotli
+try:
+    import brotli
+except Exception:
+    brotli = None
 
 from .models import (
     MobileAppSession, MobileAPICall, APICache, MobileAppConfig, MobileFeatureFlag,
@@ -885,7 +888,7 @@ def compress_data(data: str, compression_type: str = "gzip") -> bytes:
     """Compress data using specified compression type"""
     if compression_type == "gzip":
         return gzip.compress(data.encode('utf-8'))
-    elif compression_type == "brotli":
+    elif compression_type == "brotli" and brotli is not None:
         return brotli.compress(data.encode('utf-8'))
     else:
         return data.encode('utf-8')
@@ -895,7 +898,7 @@ def decompress_data(data: bytes, compression_type: str = "gzip") -> str:
     """Decompress data using specified compression type"""
     if compression_type == "gzip":
         return gzip.decompress(data).decode('utf-8')
-    elif compression_type == "brotli":
+    elif compression_type == "brotli" and brotli is not None:
         return brotli.decompress(data).decode('utf-8')
     else:
         return data.decode('utf-8')

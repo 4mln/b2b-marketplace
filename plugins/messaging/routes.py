@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Dict, Any
 from datetime import datetime
 
-from app.db.session import get_session, get_db_sync
 from plugins.auth.routes import get_current_user
 from plugins.auth.models import User
 from . import crud, schemas
