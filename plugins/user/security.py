@@ -9,6 +9,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
 
 # Placeholder: in production, replace with JWT authentication
 async def get_current_user(db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)):

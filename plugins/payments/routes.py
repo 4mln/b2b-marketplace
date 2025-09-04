@@ -22,8 +22,12 @@ from plugins.payments.crud import (
 )
 from plugins.wallet.crud import get_user_wallet_by_currency, deposit
 from sqlalchemy import select
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+except Exception:
+    A4 = None
+    canvas = None
 from io import BytesIO
 
 router = APIRouter()
