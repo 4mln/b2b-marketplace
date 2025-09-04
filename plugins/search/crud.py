@@ -22,7 +22,7 @@ from .schemas import (
     SearchBlacklistUpdate, SearchBlacklistOut, SearchBoostCreate, SearchBoostUpdate,
     SearchBoostOut, AdvancedSearchRequest, SearchFacetRequest, SearchSuggestionRequest,
     SearchIndexRequest, SearchIndexResponse, SearchAnalyticsSummary, SearchPerformanceMetrics,
-    SearchTrends, PriceRangeFilter, DateRangeFilter, LocationFilter
+    SearchTrends, PriceRangeFilter, DateRangeFilter, LocationFilter, SortField, SortOrder
 )
 
 

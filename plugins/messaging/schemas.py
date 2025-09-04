@@ -86,6 +86,10 @@ class MessageOut(MessageBase):
         from_attributes = True
 
 
+class MessageResponse(MessageOut):
+    pass
+
+
 # Participant Schemas
 class ChatParticipantBase(BaseModel):
     user_id: int
