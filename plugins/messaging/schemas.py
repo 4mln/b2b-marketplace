@@ -175,6 +175,11 @@ class ChatRoomWithParticipants(ChatRoomOut):
     participants: List[ChatParticipantOut] = []
 
 
+class ChatParticipantResponse(BaseModel):
+    participant: ChatParticipantOut
+    chat_room: ChatRoomOut
+
+
 # WebSocket Schemas
 class WebSocketMessage(BaseModel):
     type: str  # message, typing, read, join, leave
