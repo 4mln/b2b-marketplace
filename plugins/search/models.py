@@ -64,6 +64,7 @@ class SearchQuery(Base):
 class SearchIndex(Base):
     """Search index for different entities"""
     __tablename__ = "search_index"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     entity_type = Column(String(50), nullable=False)
