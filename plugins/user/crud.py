@@ -16,6 +16,13 @@ async def create_user(db: AsyncSession, user_data: UserCreate):
     return user
 
 # -----------------------------
+# Read by email
+# -----------------------------
+async def get_user_by_email(db: AsyncSession, email: str):
+    result = await db.execute(select(User).where(User.email == email))
+    return result.scalars().first()
+
+# -----------------------------
 # Read by ID
 # -----------------------------
 async def get_user(db: AsyncSession, user_id: int):
