@@ -139,7 +139,7 @@ class SearchSuggestion(Base):
     # Metadata
     entity_id = Column(Integer, nullable=True)
     entity_type = Column(String(50), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    extra_metadata = Column("metadata", JSON, nullable=True)
     
     # Status
     is_active = Column(Boolean, default=True)

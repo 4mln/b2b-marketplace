@@ -171,6 +171,10 @@ class InvitationListResponse(BaseModel):
     page_size: int
 
 
+class ChatRoomWithParticipants(ChatRoomOut):
+    participants: List[ChatParticipantOut] = []
+
+
 # WebSocket Schemas
 class WebSocketMessage(BaseModel):
     type: str  # message, typing, read, join, leave
