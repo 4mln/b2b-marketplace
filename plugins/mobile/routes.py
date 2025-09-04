@@ -563,43 +563,7 @@ def get_optimization_config():
     return MobileOptimizationConfig()
 
 
-# API Call Tracking Middleware
-@router.middleware("http")
-async def track_api_calls(request: Request, call_next):
-    """Track API calls for mobile optimization"""
-    start_time = time.time()
-    
-    # Get session ID from headers
-    session_id = request.headers.get("X-Mobile-Session-ID")
-    
-    response = await call_next(request)
-    
-    # Calculate response time
-    response_time_ms = int((time.time() - start_time) * 1000)
-    
-    # Track API call if session ID is provided
-    if session_id:
-        try:
-            db = next(get_db())
-            session = crud.get_mobile_session(db, session_id)
-            if session:
-                call_data = MobileAPICallCreate(
-                    session_id=session.id,
-                    endpoint=str(request.url.path),
-                    method=request.method,
-                    response_time_ms=response_time_ms,
-                    status_code=response.status_code,
-                    cache_hit=False,  # Would need to be determined by cache logic
-                    compression_used="gzip" in response.headers.get("content-encoding", ""),
-                    user_agent=request.headers.get("user-agent"),
-                    ip_address=request.client.host if request.client else None
-                )
-                crud.create_api_call(db, call_data)
-        except Exception as e:
-            # Log error but don't fail the request
-            print(f"Error tracking API call: {e}")
-    
-    return response
+## API call tracking middleware removed; APIRouter does not support router.middleware
 
 
 # Utility Routes

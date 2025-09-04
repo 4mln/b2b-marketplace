@@ -30,6 +30,7 @@ class SearchIndexStatus(str, enum.Enum):
 class SearchQuery(Base):
     """Search query history and analytics"""
     __tablename__ = "search_queries"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     query_text = Column(Text, nullable=False)

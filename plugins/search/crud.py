@@ -148,9 +148,9 @@ def apply_filters(query, filters: Dict[str, Any]):
             min_price = value.get("min_price")
             max_price = value.get("max_price")
             if min_price is not None:
-                query = query.filter(SearchIndex.metadata['price'].astext.cast(Float) >= min_price)
+                query = query.filter(SearchIndex.filter_metadata['price'].astext.cast(Float) >= min_price)
             if max_price is not None:
-                query = query.filter(SearchIndex.metadata['price'].astext.cast(Float) <= max_price)
+                query = query.filter(SearchIndex.filter_metadata['price'].astext.cast(Float) <= max_price)
         
         elif field == "date_range" and isinstance(value, dict):
             start_date = value.get("start_date")
@@ -183,15 +183,15 @@ def apply_sorting(query, sort_by: SortField, sort_order: SortOrder):
     
     elif sort_by == SortField.PRICE:
         if sort_order == SortOrder.DESC:
-            query = query.order_by(desc(SearchIndex.metadata['price'].astext.cast(Float)))
+            query = query.order_by(desc(SearchIndex.filter_metadata['price'].astext.cast(Float)))
         else:
-            query = query.order_by(asc(SearchIndex.metadata['price'].astext.cast(Float)))
+            query = query.order_by(asc(SearchIndex.filter_metadata['price'].astext.cast(Float)))
     
     elif sort_by == SortField.RATING:
         if sort_order == SortOrder.DESC:
-            query = query.order_by(desc(SearchIndex.metadata['rating'].astext.cast(Float)))
+            query = query.order_by(desc(SearchIndex.filter_metadata['rating'].astext.cast(Float)))
         else:
-            query = query.order_by(asc(SearchIndex.metadata['rating'].astext.cast(Float)))
+            query = query.order_by(asc(SearchIndex.filter_metadata['rating'].astext.cast(Float)))
     
     elif sort_by == SortField.POPULARITY:
         if sort_order == SortOrder.DESC:
@@ -220,10 +220,10 @@ def get_search_facets(db: Session, search_request: SearchRequest) -> List[Search
     
     # Price range facet
     price_stats = db.query(
-        func.min(SearchIndex.metadata['price'].astext.cast(Float)).label('min_price'),
-        func.max(SearchIndex.metadata['price'].astext.cast(Float)).label('max_price'),
-        func.avg(SearchIndex.metadata['price'].astext.cast(Float)).label('avg_price')
-    ).filter(SearchIndex.metadata['price'].astext.isnot(None)).first()
+        func.min(SearchIndex.filter_metadata['price'].astext.cast(Float)).label('min_price'),
+        func.max(SearchIndex.filter_metadata['price'].astext.cast(Float)).label('max_price'),
+        func.avg(SearchIndex.filter_metadata['price'].astext.cast(Float)).label('avg_price')
+    ).filter(SearchIndex.filter_metadata['price'].astext.isnot(None)).first()
     
     if price_stats and price_stats.min_price and price_stats.max_price:
         facets.append(SearchFacet(
@@ -806,9 +806,9 @@ def apply_filters(query, filters: Dict[str, Any]):
     for field, value in filters.items():
         if field == "price_range" and value:
             if value.get("min_price"):
-                query = query.filter(SearchIndex.metadata["price"].astext.cast(Float) >= value["min_price"])
+                query = query.filter(SearchIndex.filter_metadata["price"].astext.cast(Float) >= value["min_price"])
             if value.get("max_price"):
-                query = query.filter(SearchIndex.metadata["price"].astext.cast(Float) <= value["max_price"])
+                query = query.filter(SearchIndex.filter_metadata["price"].astext.cast(Float) <= value["max_price"])
         
         elif field == "categories" and value:
             query = query.filter(SearchIndex.categories.overlap(value))
@@ -820,15 +820,15 @@ def apply_filters(query, filters: Dict[str, Any]):
             # Location filtering would require geospatial queries
             # For now, filter by country/city in metadata
             if value.get("country"):
-                query = query.filter(SearchIndex.metadata["country"].astext == value["country"])
+                query = query.filter(SearchIndex.filter_metadata["country"].astext == value["country"])
             if value.get("city"):
-                query = query.filter(SearchIndex.metadata["city"].astext == value["city"])
+                query = query.filter(SearchIndex.filter_metadata["city"].astext == value["city"])
         
         elif field == "date_range" and value:
             if value.get("start_date"):
-                query = query.filter(SearchIndex.metadata["created_at"].astext.cast(DateTime) >= value["start_date"])
+                query = query.filter(SearchIndex.filter_metadata["created_at"].astext.cast(DateTime) >= value["start_date"])
             if value.get("end_date"):
-                query = query.filter(SearchIndex.metadata["created_at"].astext.cast(DateTime) <= value["end_date"])
+                query = query.filter(SearchIndex.filter_metadata["created_at"].astext.cast(DateTime) <= value["end_date"])
         
         elif field == "attributes" and value:
             for attr_name, attr_value in value.items():
@@ -842,11 +842,11 @@ def apply_sorting(query, sort_by: str, sort_order: str):
     if sort_by == "relevance":
         query = query.order_by(desc(SearchIndex.relevance_score))
     elif sort_by == "price":
-        query = query.order_by(SearchIndex.metadata["price"].astext.cast(Float))
+        query = query.order_by(SearchIndex.filter_metadata["price"].astext.cast(Float))
         if sort_order == "desc":
-            query = query.order_by(desc(SearchIndex.metadata["price"].astext.cast(Float)))
+            query = query.order_by(desc(SearchIndex.filter_metadata["price"].astext.cast(Float)))
     elif sort_by == "rating":
-        query = query.order_by(desc(SearchIndex.metadata["rating"].astext.cast(Float)))
+        query = query.order_by(desc(SearchIndex.filter_metadata["rating"].astext.cast(Float)))
     elif sort_by == "popularity":
         query = query.order_by(desc(SearchIndex.popularity_score))
     elif sort_by == "recency":
@@ -882,9 +882,9 @@ def get_search_facets(db: Session, search_request: SearchRequest) -> List[Search
     
     # Get price range facets
     price_facets = db.query(
-        func.avg(SearchIndex.metadata["price"].astext.cast(Float)).label('avg_price'),
-        func.min(SearchIndex.metadata["price"].astext.cast(Float)).label('min_price'),
-        func.max(SearchIndex.metadata["price"].astext.cast(Float)).label('max_price')
+        func.avg(SearchIndex.filter_metadata["price"].astext.cast(Float)).label('avg_price'),
+        func.min(SearchIndex.filter_metadata["price"].astext.cast(Float)).label('min_price'),
+        func.max(SearchIndex.filter_metadata["price"].astext.cast(Float)).label('max_price')
     ).filter(
         SearchIndex.status == "indexed"
     ).first()
