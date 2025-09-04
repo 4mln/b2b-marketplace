@@ -18,7 +18,8 @@ from plugins.auth.schemas import (
     TwoFASetupOut, TwoFAToggle, TwoFAVerify
 )
 from plugins.auth.models import User, UserProfileChange
-from plugins.auth.jwt import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from plugins.auth.jwt import create_access_token
+from app.core.config import settings
 from plugins.user.crud import create_user, get_user_by_email
 from plugins.user.security import verify_password, get_password_hash
 from sqlalchemy import select, update
@@ -77,7 +78,7 @@ async def login_for_access_token(
     await db.commit()
     await db.refresh(session)
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
@@ -374,7 +375,7 @@ async def otp_verify(payload: OTPVerify, db: AsyncSession = Depends(lambda: __im
 
     access_token = create_access_token(
         data={"sub": user.email},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

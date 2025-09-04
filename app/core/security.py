@@ -20,3 +20,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 def setup_security_middleware(app: FastAPI):
     app.add_middleware(SecurityHeadersMiddleware)
+
+
+def verify_user_role(user, required_role: str) -> bool:
+    """Minimal role checker used by some plugins.
+    Returns True if user's role matches or user is superuser.
+    """
+    role = getattr(user, "role", None)
+    is_superuser = getattr(user, "is_superuser", False)
+    return bool(is_superuser or (role == required_role))
