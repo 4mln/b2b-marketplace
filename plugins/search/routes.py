@@ -21,6 +21,15 @@ def db_dep():
     yield from get_db_sync()
 
 
+# Exported helper for other plugins (e.g., products)
+async def sync_products(db):
+    # Placeholder: trigger reindexing of products
+    try:
+        crud.reindex_entities(db, schemas.SearchIndexType.PRODUCT, None, False)
+    except Exception:
+        pass
+
+
 # Core Search Routes
 @router.post("/", response_model=schemas.SearchResponse)
 def search(
