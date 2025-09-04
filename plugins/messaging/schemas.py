@@ -90,6 +90,13 @@ class MessageResponse(MessageOut):
     pass
 
 
+class UnreadMessagesResponse(BaseModel):
+    chats: List[ChatRoomOut]
+    total: int
+    page: int
+    page_size: int
+
+
 # Participant Schemas
 class ChatParticipantBase(BaseModel):
     user_id: int
