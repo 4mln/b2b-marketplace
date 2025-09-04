@@ -99,6 +99,7 @@ class SearchIndex(Base):
 class SearchFilter(Base):
     """Predefined search filters"""
     __tablename__ = "search_filters"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
