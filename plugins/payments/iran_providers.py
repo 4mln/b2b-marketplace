@@ -2,7 +2,6 @@
 Iran Payment Providers Integration
 Supports major Iranian payment gateways and banks
 """
-import httpx
 import hashlib
 import hmac
 import json
@@ -11,6 +10,11 @@ from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
 from urllib.parse import urlencode
 import logging
+
+try:
+    import httpx
+except Exception:
+    httpx = None
 
 logger = logging.getLogger(__name__)
 
