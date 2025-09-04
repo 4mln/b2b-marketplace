@@ -24,7 +24,7 @@ auth_docs: Dict[str, Dict[str, Any]] = {
                                     "id": 1,
                                     "email": "user@example.com",
                                     "full_name": "John Doe",
-                                    "is_active": true,
+                                    "is_active": True,
                                     "created_at": "2023-06-15T10:30:00Z"
                                 }
                             }

@@ -76,7 +76,7 @@ class SearchIndex(Base):
     categories = Column(JSON, nullable=True)  # Array of category IDs
     
     # Metadata for filtering
-    metadata = Column(JSON, nullable=True)  # Price, location, ratings, etc.
+    filter_metadata = Column("metadata", JSON, nullable=True)  # Price, location, ratings, etc.
     attributes = Column(JSON, nullable=True)  # Product attributes, seller info, etc.
     
     # Search relevance

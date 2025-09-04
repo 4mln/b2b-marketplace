@@ -770,14 +770,6 @@ def update_search_boost(db: Session, boost_id: int, boost_data: SearchBoostUpdat
     db.commit()
     db.refresh(db_boost)
     return SearchBoostOut.from_orm(db_boost)
-        page_size=search_request.page_size,
-        total_pages=(total_results + search_request.page_size - 1) // search_request.page_size,
-        results=results,
-        facets=facets,
-        suggestions=suggestions,
-        search_time_ms=search_time_ms,
-        filters_applied=search_request.filters
-    )
 
 
 def build_search_query(db: Session, search_request: SearchRequest):

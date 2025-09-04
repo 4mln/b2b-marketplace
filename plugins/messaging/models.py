@@ -53,7 +53,7 @@ class Message(Base):
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
     message_type = Column(String, default="text")  # text, image, file, system
-    metadata = Column(JSON, nullable=True)  # For file info, etc.
+    extra_metadata = Column("metadata", JSON, nullable=True)  # For file info, etc.
     reply_to_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
