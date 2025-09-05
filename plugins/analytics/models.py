@@ -1,6 +1,7 @@
 
 from sqlalchemy import Column, Integer, String, JSON, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
+import enum
 
 from app.db.base import Base
 
@@ -84,3 +85,12 @@ class DataExport(Base):
     id = Column(Integer, primary_key=True, index=True)
     format = Column(String, default="csv")
     data = Column(JSON, nullable=True)
+
+
+class AnalyticsEventType(str, enum.Enum):
+    USER_REGISTRATION = "user_registration"
+    USER_LOGIN = "user_login"
+    PRODUCT_VIEW = "product_view"
+    PRODUCT_SEARCH = "product_search"
+    ORDER_CREATED = "order_created"
+    ORDER_COMPLETED = "order_completed"
