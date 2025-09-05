@@ -77,3 +77,10 @@ class Dashboard(Base):
     __tablename__ = "dashboards"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+
+
+class DataExport(Base):
+    __tablename__ = "data_exports"
+    id = Column(Integer, primary_key=True, index=True)
+    format = Column(String, default="csv")
+    data = Column(JSON, nullable=True)
