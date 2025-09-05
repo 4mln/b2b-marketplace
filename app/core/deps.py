@@ -19,7 +19,7 @@ def get_db():
 def get_session():
     from app.db.session import get_session as _get_session
     return _get_session()
-from plugins.auth.models import User
+from plugins.user.models import User
 
 # Database dependencies
 get_db = get_db_sync

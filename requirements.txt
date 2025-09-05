@@ -39,8 +39,9 @@ typing-inspection==0.4.1
 typing_extensions==4.14.1
 uvicorn==0.35.0
 yarl==1.20.1
-
-
+pyotp==2.9.0
+reportlab==4.4.3
+python-multipart==0.0.20
 # Security packages
 cryptography>=42.0.5
 ujson>=5.9.0

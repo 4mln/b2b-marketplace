@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
+from app.db.base import Base
 
 class Config(PluginConfig):
     """Config schema for Orders plugin"""
@@ -26,7 +27,7 @@ class Plugin(PluginBase):
         from plugins.orders.routes import router as orders_router
         self.router.include_router(
             orders_router,
-            prefix=f"/{self.slug}",
+            prefix=f"/api/v1/{self.slug}",
             tags=["Orders"]
         )
         app.include_router(self.router)

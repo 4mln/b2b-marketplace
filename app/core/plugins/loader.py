@@ -14,7 +14,7 @@ from .registry import PluginRegistry
 
 class LoaderSettings(BaseModel):
     plugins_package: str = "plugins"  # Python package name
-    plugins_fs_path: str | None = None # filesystem path; if None, resolved via package
+    plugins_fs_path: str | None = "/code/plugins" # filesystem path; if None, resolved via package
     enable_hot_reload: bool = False
 
 class PluginLoader:
@@ -32,13 +32,25 @@ class PluginLoader:
 
         if fs_path is None:
             # Try to import the package to discover path
-            pkg = importlib.import_module(package)
-            pkg_path = os.path.dirname(pkg.__file__)  # type: ignore[attr-defined]
+            try:
+                pkg = importlib.import_module(package)
+                pkg_path = os.path.dirname(pkg.__file__)  # type: ignore[attr-defined]
+            except (ImportError, AttributeError) as e:
+                # Fallback to direct filesystem path if import fails
+                print(f"[discover] Import failed: {e}, trying direct path")
+                pkg_path = os.path.join('/code', package)
         else:
             pkg_path = fs_path
 
         if not os.path.isdir(pkg_path):
-            raise RuntimeError(f"Plugins path does not exist: {pkg_path}")
+            print(f"[discover] Plugins path does not exist: {pkg_path}")
+            # Try alternative path
+            alt_path = os.path.join('/code', package)
+            if os.path.isdir(alt_path):
+                print(f"[discover] Using alternative path: {alt_path}")
+                pkg_path = alt_path
+            else:
+                raise RuntimeError(f"Plugins path does not exist: {pkg_path} or {alt_path}")
 
         discovered: Dict[str, str] = {}
         for _, name, ispkg in pkgutil.iter_modules([pkg_path]):

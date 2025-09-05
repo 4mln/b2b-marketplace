@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
 
+with open('/code/plugins/products/models.py', 'w') as f:
+    f.write('''
 from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime, func, JSON
 from sqlalchemy.orm import relationship, declarative_base
 
@@ -20,3 +23,5 @@ class Product(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     seller = relationship("Seller")
+''')
+    print("File updated successfully!")

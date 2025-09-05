@@ -8,6 +8,12 @@ from sqlalchemy.sql import func
 from datetime import datetime
 import enum
 from app.db.base import Base
+# Ensure 'orders' table is registered before defining FKs to it
+try:
+    from plugins.orders.models import Order  # noqa: F401
+except Exception:
+    # Safe import guard; plugin load order should handle this, but ensure no import-time crash
+    Order = None  # type: ignore
 
 
 class AdType(str, enum.Enum):
@@ -349,6 +355,9 @@ class AdAnalytics(Base):
     
     # Relationships
     ad = relationship("Ad")
+
+
+
 
 
 

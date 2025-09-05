@@ -31,7 +31,7 @@ async def get_session() -> AsyncSession:
 
 # Sync engine and session for plugins that need sync operations
 sync_engine = create_engine(
-    settings.DATABASE_URL.replace("+asyncpg", ""),  # Remove asyncpg for sync
+    settings.DATABASE_URL.replace("+asyncpg", "+psycopg2"),  # Replace asyncpg with psycopg2 for sync
     echo=True,
     pool_pre_ping=True,
     pool_size=20,
