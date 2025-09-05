@@ -21,7 +21,7 @@ class WalletOut(WalletBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TransactionBase(BaseModel):
     amount: float
@@ -43,7 +43,7 @@ class TransactionOut(TransactionBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class DepositRequest(BaseModel):
     amount: float = Field(..., gt=0)
