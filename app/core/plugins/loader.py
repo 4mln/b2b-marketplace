@@ -164,9 +164,15 @@ class PluginLoader:
                 if hasattr(instance, "register_events"):  # support event hooks
                     instance.register_events(app)
 
-                # DB and hooks
-                await instance.init_db(engine)
-                await instance.on_startup(app)
+                # DB and hooks (be tolerant to network/DB hiccups at startup)
+                try:
+                    await instance.init_db(engine)
+                except Exception as e:
+                    print(f"[loader] init_db error for '{slug}': {e}")
+                try:
+                    await instance.on_startup(app)
+                except Exception as e:
+                    print(f"[loader] on_startup error for '{slug}': {e}")
 
                 loaded.append(instance)
                 print(f"[loader] Loaded plugin: {slug} ({instance.version})")
