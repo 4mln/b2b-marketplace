@@ -15,14 +15,14 @@ from .models import (
 )
 from .schemas import (
     SearchRequest, SearchResponse, SearchResult, SearchFacet, SearchSuggestion as SearchSuggestionSchema,
-    SearchIndexCreate, SearchIndexUpdate, SearchIndexOut, SearchQueryCreate, SearchQueryUpdate,
+    SearchIndexCreate, SearchIndexUpdate, SearchIndexOut, SearchQueryCreate, SearchQueryUpdate, SearchQueryOut,
     SearchFilterCreate, SearchFilterUpdate, SearchFilterOut, SearchSuggestionCreate,
     SearchSuggestionUpdate, SearchSuggestionOut, SearchAnalyticsCreate, SearchAnalyticsOut,
     SearchSynonymCreate, SearchSynonymUpdate, SearchSynonymOut, SearchBlacklistCreate,
     SearchBlacklistUpdate, SearchBlacklistOut, SearchBoostCreate, SearchBoostUpdate,
     SearchBoostOut, AdvancedSearchRequest, SearchFacetRequest, SearchSuggestionRequest,
     SearchIndexRequest, SearchIndexResponse, SearchAnalyticsSummary, SearchPerformanceMetrics,
-    SearchTrends, PriceRangeFilter, DateRangeFilter, LocationFilter
+    SearchTrends, PriceRangeFilter, DateRangeFilter, LocationFilter, SortField, SortOrder
 )
 
 

@@ -631,4 +631,3 @@ def get_pending_ads(
 
 
 
-

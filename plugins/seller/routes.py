@@ -19,7 +19,7 @@ from plugins.seller.crud import (
 from plugins.user.security import get_current_user
 from plugins.user.models import User
 from plugins.products.crud import list_products
-from plugins.auth.models import User as AuthUser
+# AuthUser import removed as User is now imported from plugins.user.models
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ router = APIRouter()
 async def create_seller_endpoint(
     seller: SellerCreate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
+    db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),
 ) -> SellerOut:
     return await create_seller(db, seller, user.id)
 
@@ -40,7 +40,7 @@ async def create_seller_endpoint(
 @router.get("/{seller_id}", response_model=SellerOut, operation_id="seller_get_by_id")
 async def get_seller_endpoint(
     seller_id: int,
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
+    db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),
 ) -> SellerOut:
     db_seller = await get_seller(db, seller_id)
     if not db_seller:
@@ -55,7 +55,7 @@ async def update_seller_endpoint(
     seller_id: int,
     seller_data: SellerUpdate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
+    db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),
 ) -> SellerOut:
     db_seller = await update_seller(db, seller_id, seller_data, user.id)
     if not db_seller:
@@ -69,7 +69,7 @@ async def update_seller_endpoint(
 async def delete_seller_endpoint(
     seller_id: int,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
+    db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),
 ) -> dict:
     success = await delete_seller(db, seller_id, user.id)
     if not success:
@@ -87,7 +87,7 @@ async def list_sellers_endpoint(
     sort_dir: str = Query("asc", regex="^(asc|desc)$", description="Sort direction"),
     search: Optional[str] = Query(None, description="Search term for seller name"),
     subscription_type: Optional[SubscriptionType] = Query(None, description="Filter by subscription type"),
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
+    db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),
 ) -> List[SellerOut]:
     return await list_sellers(db, offset=(page-1)*page_size, limit=page_size)
 
@@ -100,14 +100,14 @@ async def seller_storefront(
     seller_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
+    db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),
 ):
     seller = await get_seller(db, seller_id)
     if not seller:
         raise HTTPException(status_code=404, detail="Seller not found")
     products = await list_products(db, page=page, page_size=page_size, sort_by="id", sort_dir="desc", search=None)
     products = [p for p in products if getattr(p, "status", "approved") == "approved"]
-    # KYC badge from auth User.kyc_status
-    owner = await db.get(AuthUser, seller.user_id)
+    # KYC badge from User.kyc_status
+    owner = await db.get(User, seller.user_id)
     kyc_badge = getattr(owner, "kyc_status", "pending") if owner else "pending"
     return {"seller": seller, "kyc_badge": kyc_badge, "products": products}

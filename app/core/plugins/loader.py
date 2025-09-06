@@ -14,7 +14,8 @@ from .registry import PluginRegistry
 
 class LoaderSettings(BaseModel):
     plugins_package: str = "plugins"  # Python package name
-    plugins_fs_path: str | None = None # filesystem path; if None, resolved via package
+    # If None, the loader will auto-discover using importlib and common roots
+    plugins_fs_path: str | None = None
     enable_hot_reload: bool = False
 
 class PluginLoader:
@@ -30,15 +31,45 @@ class PluginLoader:
         package = self.settings.plugins_package
         fs_path = self.settings.plugins_fs_path
 
-        if fs_path is None:
-            # Try to import the package to discover path
-            pkg = importlib.import_module(package)
-            pkg_path = os.path.dirname(pkg.__file__)  # type: ignore[attr-defined]
-        else:
+        # 1) If explicit path provided, prefer it (if exists)
+        if fs_path and os.path.isdir(fs_path):
             pkg_path = fs_path
+        else:
+            # 2) Try to import the package to discover path
+            pkg_path = None
+            try:
+                pkg = importlib.import_module(package)
+                pkg_path = os.path.dirname(pkg.__file__)  # type: ignore[attr-defined]
+            except (ImportError, AttributeError) as e:
+                print(f"[discover] Import failed: {e}")
 
-        if not os.path.isdir(pkg_path):
-            raise RuntimeError(f"Plugins path does not exist: {pkg_path}")
+            # 3) Probe common candidate roots
+            candidate_roots = []
+            # Current working directory
+            candidate_roots.append(os.getcwd())
+            # Directory entries on sys.path
+            candidate_roots.extend([p for p in sys.path if isinstance(p, str)])
+            # Common dev roots
+            candidate_roots.extend(["/workspace", "/code"])  # tolerate container paths
+            # Directory relative to this file (../../.. -> repo root)
+            here = os.path.dirname(__file__)
+            repo_root = os.path.abspath(os.path.join(here, "..", "..", ".."))
+            candidate_roots.append(repo_root)
+
+            if not pkg_path or not os.path.isdir(pkg_path):
+                for root in candidate_roots:
+                    candidate = os.path.join(root, package)
+                    if os.path.isdir(candidate):
+                        pkg_path = candidate
+                        print(f"[discover] Using discovered path: {pkg_path}")
+                        break
+
+            if not pkg_path or not os.path.isdir(pkg_path):
+                # Final informative error
+                tried = [os.path.join(r, package) for r in candidate_roots]
+                raise RuntimeError(
+                    f"Plugins path could not be resolved. Tried: {tried}"
+                )
 
         discovered: Dict[str, str] = {}
         for _, name, ispkg in pkgutil.iter_modules([pkg_path]):
@@ -133,9 +164,15 @@ class PluginLoader:
                 if hasattr(instance, "register_events"):  # support event hooks
                     instance.register_events(app)
 
-                # DB and hooks
-                await instance.init_db(engine)
-                await instance.on_startup(app)
+                # DB and hooks (be tolerant to network/DB hiccups at startup)
+                try:
+                    await instance.init_db(engine)
+                except Exception as e:
+                    print(f"[loader] init_db error for '{slug}': {e}")
+                try:
+                    await instance.on_startup(app)
+                except Exception as e:
+                    print(f"[loader] on_startup error for '{slug}': {e}")
 
                 loaded.append(instance)
                 print(f"[loader] Loaded plugin: {slug} ({instance.version})")

@@ -18,3 +18,7 @@ async def get_locale(accept_language: str | None = Header(None)):
 
 
 
+
+
+
+

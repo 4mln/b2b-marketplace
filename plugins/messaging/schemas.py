@@ -86,6 +86,17 @@ class MessageOut(MessageBase):
         from_attributes = True
 
 
+class MessageResponse(MessageOut):
+    pass
+
+
+class UnreadMessagesResponse(BaseModel):
+    chats: List[ChatRoomOut]
+    total: int
+    page: int
+    page_size: int
+
+
 # Participant Schemas
 class ChatParticipantBase(BaseModel):
     user_id: int
@@ -169,6 +180,15 @@ class InvitationListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class ChatRoomWithParticipants(ChatRoomOut):
+    participants: List[ChatParticipantOut] = []
+
+
+class ChatParticipantResponse(BaseModel):
+    participant: ChatParticipantOut
+    chat_room: ChatRoomOut
 
 
 # WebSocket Schemas

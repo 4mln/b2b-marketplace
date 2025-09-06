@@ -355,6 +355,13 @@ async def update_refund_status(
     return await db.get(PaymentRefund, refund_id)
 
 # -----------------------------
+# Optional init hook used by plugin loader
+# -----------------------------
+async def init_tables(engine=None):
+    """Optional no-op initializer to satisfy plugin loader if called."""
+    return True
+
+# -----------------------------
 # Payment Analytics
 # -----------------------------
 async def get_payment_analytics(

@@ -99,6 +99,7 @@ class SearchIndex(Base):
 class SearchFilter(Base):
     """Predefined search filters"""
     __tablename__ = "search_filters"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
@@ -138,7 +139,7 @@ class SearchSuggestion(Base):
     # Metadata
     entity_id = Column(Integer, nullable=True)
     entity_type = Column(String(50), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    extra_metadata = Column("metadata", JSON, nullable=True)
     
     # Status
     is_active = Column(Boolean, default=True)

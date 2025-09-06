@@ -42,3 +42,7 @@ class QuoteOut(QuoteCreate):
 
 
 
+
+
+
+

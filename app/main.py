@@ -1,4 +1,9 @@
 # app/main.py
+# Fix Python path to include /code directory
+import sys
+if '/code' not in sys.path:
+    sys.path.insert(0, '/code')
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -50,6 +55,31 @@ app = FastAPI(
 )
 # Configure API documentation
 setup_api_documentation(app)
+
+# Setup API routes
+import sys
+print(f"Python path: {sys.path}")
+try:
+    from app.api.routes import setup_api_routes
+    setup_api_routes(app)
+except ImportError as e:
+    print(f"Error importing routes: {e}")
+    # Try alternative import path
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("routes", "/code/app/api/routes.py")
+        routes_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(routes_module)
+        routes_module.setup_api_routes(app)
+        print("Successfully loaded routes from alternative path")
+    except Exception as e2:
+        print(f"Failed alternative import: {e2}")
+        # Create router directly as fallback
+        from fastapi import APIRouter
+        api_router = APIRouter(prefix="/api/v1")
+        app.include_router(api_router)
+        print("Created fallback API router")
+
 
 # Configure CORS
 app.add_middleware(

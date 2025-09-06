@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum, Boolean, JSON, Text
+
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, func, Enum, JSON
 from sqlalchemy.orm import relationship
-from datetime import datetime
 import enum
+
 from app.db.base import Base
 
 class PaymentStatus(str, enum.Enum):
@@ -13,19 +14,14 @@ class PaymentStatus(str, enum.Enum):
     REFUNDED = "refunded"
 
 class PaymentMethod(str, enum.Enum):
-    # Iran Local Payment Methods
     ZARINPAL = "zarinpal"
     MELLAT = "mellat"
     PARSIJOO = "parsijoo"
     PAYPING = "payping"
     IDPAY = "idpay"
     NEXT_PAY = "next_pay"
-    
-    # International Payment Methods
     STRIPE = "stripe"
     PAYPAL = "paypal"
-    
-    # Crypto (Future)
     BITCOIN = "bitcoin"
     ETHEREUM = "ethereum"
     TETHER = "tether"
@@ -43,30 +39,23 @@ class Payment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
     amount = Column(Float, nullable=False)
-    currency = Column(String, nullable=False, default="IRR")  # IRR, USD, EUR
-    payment_method = Column(String, nullable=False)
-    payment_type = Column(String, nullable=False)
-    status = Column(String, nullable=False, default=PaymentStatus.PENDING)
-    
-    # Payment provider specific fields
-    provider_transaction_id = Column(String, nullable=True)  # External transaction ID
-    provider_response = Column(JSON, nullable=True)  # Full provider response
-    provider_error = Column(Text, nullable=True)  # Error message from provider
-    
-    # Payment metadata
-    description = Column(Text, nullable=True)
-    reference_id = Column(String, nullable=True)  # Reference to order, subscription, etc.
-    payment_metadata = Column(JSON, nullable=True)  # Additional payment metadata
-    
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    completed_at = Column(DateTime, nullable=True)
-    
-    # Relationships
-    user = relationship("User", back_populates="payments")
-    refunds = relationship("PaymentRefund", back_populates="payment", cascade="all, delete-orphan")
+    currency = Column(String, default="IRR")
+    status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
+    payment_method = Column(Enum(PaymentMethod), nullable=False)
+    payment_type = Column(Enum(PaymentType), nullable=False)
+    reference_id = Column(String, nullable=True, index=True)
+    provider_transaction_id = Column(String, nullable=True)
+    provider_response = Column(JSON, nullable=True)
+    provider_error = Column(String, nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    order = relationship("Order", back_populates="payments")
+    user = relationship("User")
+
 
 class PaymentRefund(Base):
     __tablename__ = "payment_refunds"
@@ -74,47 +63,14 @@ class PaymentRefund(Base):
     id = Column(Integer, primary_key=True, index=True)
     payment_id = Column(Integer, ForeignKey("payments.id"), nullable=False)
     amount = Column(Float, nullable=False)
-    reason = Column(Text, nullable=True)
-    status = Column(String, nullable=False, default=PaymentStatus.PENDING)
+    reason = Column(String, nullable=True)
+    status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
     provider_refund_id = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    processed_at = Column(DateTime, nullable=True)
-    
-    # Relationships
-    payment = relationship("Payment", back_populates="refunds")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    processed_at = Column(DateTime(timezone=True), nullable=True)
 
-class PaymentProvider(Base):
-    __tablename__ = "payment_providers"
+    payment = relationship("Payment")
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)
-    display_name = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
-    is_test_mode = Column(Boolean, default=True)
-    
-    # Provider configuration
-    api_key = Column(String, nullable=True)
-    api_secret = Column(String, nullable=True)
-    merchant_id = Column(String, nullable=True)
-    callback_url = Column(String, nullable=True)
-    webhook_url = Column(String, nullable=True)
-    
-    # Supported features
-    supports_irr = Column(Boolean, default=True)
-    supports_usd = Column(Boolean, default=False)
-    supports_eur = Column(Boolean, default=False)
-    supports_refunds = Column(Boolean, default=True)
-    
-    # Fee structure
-    transaction_fee_percentage = Column(Float, default=0.0)
-    transaction_fee_fixed = Column(Float, default=0.0)
-    minimum_amount = Column(Float, default=0.0)
-    maximum_amount = Column(Float, nullable=True)
-    
-    # Configuration
-    config = Column(JSON, nullable=True)  # Provider-specific configuration
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class PaymentWebhook(Base):
     __tablename__ = "payment_webhooks"
@@ -124,10 +80,11 @@ class PaymentWebhook(Base):
     event_type = Column(String, nullable=False)
     payload = Column(JSON, nullable=False)
     signature = Column(String, nullable=True)
-    processed = Column(Boolean, default=False)
-    processed_at = Column(DateTime, nullable=True)
-    error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    processed = Column(Integer, default=0)
+    processed_at = Column(DateTime(timezone=True), nullable=True)
+    error_message = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 
 class WithdrawalRequest(Base):
     __tablename__ = "withdrawal_requests"
@@ -135,9 +92,9 @@ class WithdrawalRequest(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Float, nullable=False)
-    currency = Column(String, nullable=False, default="IRR")
+    currency = Column(String, default="IRR")
     bank_account = Column(JSON, nullable=False)
-    status = Column(String, nullable=False, default="pending")  # pending, approved, rejected, paid
-    reason = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status = Column(String, default="pending")
+    reason = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=True)

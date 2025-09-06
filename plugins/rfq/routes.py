@@ -9,7 +9,7 @@ from .dependencies import enforce_rfq_limit
 from plugins.ratings.crud import get_reputation_score
 from sqlalchemy import select
 from plugins.seller.models import Seller
-from plugins.auth.models import User as AuthUser
+# AuthUser import removed as User is now imported from plugins.user.models
 from typing import List, Optional
 
 
@@ -20,7 +20,7 @@ router = APIRouter()
 async def create_rfq_endpoint(
     payload: RFQCreate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session),
+    db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),
 ):
     await enforce_rfq_limit(user.id, db)
     # Spam throttle: simple rate limit based on recent RFQs

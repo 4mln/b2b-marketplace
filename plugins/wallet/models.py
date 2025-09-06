@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum, Boolean
+
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, func, Enum
 from sqlalchemy.orm import relationship
-from datetime import datetime
 import enum
+
 from app.db.base import Base
 
 class CurrencyType(str, enum.Enum):
@@ -20,16 +21,15 @@ class Wallet(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    currency = Column(String, nullable=False)
-    currency_type = Column(String, nullable=False, default=CurrencyType.FIAT)
-    balance = Column(Float, nullable=False, default=0.0)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    balance = Column(Float, default=0.0)
+    currency = Column(String, default="IRR")
+    currency_type = Column(Enum(CurrencyType), default=CurrencyType.FIAT)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationships
-    user = relationship("User", back_populates="wallets")
-    transactions = relationship("Transaction", back_populates="wallet", cascade="all, delete-orphan")
+    user = relationship("User", back_populates="wallet")
+    transactions = relationship("Transaction", back_populates="wallet")
+
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -37,12 +37,11 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     wallet_id = Column(Integer, ForeignKey("wallets.id"), nullable=False)
     amount = Column(Float, nullable=False)
-    transaction_type = Column(String, nullable=False)
-    reference = Column(String, nullable=True)  # Reference to external transaction ID or order
+    transaction_type = Column(Enum(TransactionType), nullable=False)
+    reference = Column(String, nullable=True)
     description = Column(String, nullable=True)
-    status = Column(String, default="pending")  # pending, completed, failed
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status = Column(String, default="pending")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationships
     wallet = relationship("Wallet", back_populates="transactions")

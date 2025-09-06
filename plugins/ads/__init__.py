@@ -12,7 +12,7 @@ class Config(PluginConfig):
 class Plugin(PluginBase):
     slug = "ads"
     version = "0.1.0"
-    dependencies: list[str] = ["auth", "seller"]
+    dependencies: list[str] = ["auth", "seller", "orders"]
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):

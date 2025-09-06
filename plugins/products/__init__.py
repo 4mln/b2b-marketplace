@@ -19,7 +19,7 @@ class Plugin(PluginBase):
         from . import routes  # Lazy import with relative path
         self.router.include_router(
             routes.router,
-            prefix=f"/{self.slug}",
+            prefix=f"/api/v1/{self.slug}",
             tags=["Products"]
         )
         app.include_router(self.router)
