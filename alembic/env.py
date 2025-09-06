@@ -1,8 +1,15 @@
 from logging.config import fileConfig
+import importlib
+import pkgutil
+import os
+import plugins
 import asyncio
 
 from sqlalchemy import pool, create_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
+from app.db.base import Base
+from app.core.config import settings  # contains DATABASE_URL
 
 # Alembic Config object
 config = context.config
@@ -11,49 +18,32 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import your SQLAlchemy models Base here
-from app.db.base import Base
-# Import models to ensure they are registered with Base.metadata
-try:
-    from plugins.seller.models import Seller
-except ImportError:
-    pass  # Seller models might not exist yet
+# Automatically import all models from all plugins only if models.py exists
+for _, name, _ in pkgutil.iter_modules(plugins.__path__, plugins.__name__ + "."):
+    try:
+        plugin_path = os.path.join(os.path.dirname(__file__), "..", name.replace(".", "/"))
+        models_file = os.path.join(plugin_path, "models.py")
+        if os.path.isfile(models_file):
+            importlib.import_module(f"{name}.models")
+    except Exception:
+        # skip any plugin that cannot be imported
+        pass
+
+# Set target metadata for Alembic
 target_metadata = Base.metadata
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
-    url = config.get_main_option("sqlalchemy.url")
+    sync_url = settings.DATABASE_URL.replace("asyncpg", "psycopg2")
     context.configure(
-        url=url,
+        url=sync_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
-
-
-def run_migrations_online() -> None:
-    """Run migrations in 'online' mode with synchronous engine."""
-
-    connectable = create_engine(
-        config.get_main_option("sqlalchemy.url"),
-        poolclass=pool.NullPool,
-        future=True,
-        echo=True,
-    )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True,
-            render_as_batch=True
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
 
 
 def run_sync_migrations(connection):
@@ -61,15 +51,45 @@ def run_sync_migrations(connection):
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        compare_type=True,  # optional: detect column type changes
-        render_as_batch=True  # optional: support SQLite ALTER TABLE, safe default
+        compare_type=True,
+        render_as_batch=True
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
 
+def run_migrations_online_sync() -> None:
+    """Run migrations in 'online' mode with synchronous engine."""
+    sync_url = settings.DATABASE_URL.replace("asyncpg", "psycopg2")
+    connectable = create_engine(
+        sync_url,
+        poolclass=pool.NullPool,
+        future=True,
+        echo=True,
+    )
+    with connectable.connect() as connection:
+        run_sync_migrations(connection)
+
+
+async def run_migrations_online_async() -> None:
+    """Run migrations in 'online' mode with async engine."""
+    connectable = create_async_engine(
+        settings.DATABASE_URL,
+        poolclass=pool.NullPool,
+        future=True,
+        echo=True,
+    )
+    async with connectable.connect() as connection:
+        await connection.run_sync(run_sync_migrations)
+    await connectable.dispose()
+
+
+# Execute the appropriate mode
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    # Choose sync or async based on URL
+    if settings.DATABASE_URL.startswith("postgresql+asyncpg"):
+        asyncio.run(run_migrations_online_async())
+    else:
+        run_migrations_online_sync()

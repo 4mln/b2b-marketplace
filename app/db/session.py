@@ -14,7 +14,7 @@ from app.db.base import Base
 async_engine = create_async_engine(
     settings.DATABASE_URL,
     future=True,
-    echo=True
+    echo=False
 )
 
 # Async session factory
