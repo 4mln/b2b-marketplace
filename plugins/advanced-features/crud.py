@@ -1,12 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy import select
 from .models import AITask
 from .schemas import AITaskCreate
 
-async def init_tables(engine):
+async def init_tables(engine: AsyncEngine):
     async with engine.begin() as conn:
         await conn.run_sync(AITask.metadata.create_all)
-
 # -----------------------------
 # Create AI Task
 # -----------------------------

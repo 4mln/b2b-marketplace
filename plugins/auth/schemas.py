@@ -1,5 +1,5 @@
 # plugins/auth/schemas.py
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, validator
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -116,15 +116,15 @@ class BusinessProfileUpdate(BaseModel):
     business_description: Optional[str] = None
     
     # Contact Details
-    business_phones: Optional[List[str]] = Field(None, max_items=4)
-    business_emails: Optional[List[str]] = Field(None, max_items=5)
+    business_phones: Optional[List[str]] = Field(None, max_length=4)
+    business_emails: Optional[List[str]] = Field(None, max_length=5)
     website: Optional[str] = None
     telegram_id: Optional[str] = None
     whatsapp_id: Optional[str] = None
     
     # Addresses and Bank Accounts
-    business_addresses: Optional[List[BusinessAddress]] = Field(None, max_items=3)
-    bank_accounts: Optional[List[BankAccount]] = Field(None, max_items=3)
+    business_addresses: Optional[List[BusinessAddress]] = Field(None, max_length=3)
+    bank_accounts: Optional[List[BankAccount]] = Field(None, max_length=3)
     
     # Privacy and Preferences
     privacy_settings: Optional[PrivacySettings] = None
@@ -132,7 +132,7 @@ class BusinessProfileUpdate(BaseModel):
     
     model_config = ConfigDict(extra="forbid")
     
-    @validator('business_phones')
+    @field_validator('business_phones')
     def validate_phone_numbers(cls, v):
         if v is not None:
             for phone in v:
@@ -140,7 +140,7 @@ class BusinessProfileUpdate(BaseModel):
                     raise ValueError("Invalid phone number")
         return v
     
-    @validator('business_emails')
+    @field_validator('business_emails')
     def validate_emails(cls, v):
         if v is not None:
             for email in v:
@@ -244,10 +244,10 @@ class KYCVerificationRequest(BaseModel):
     business_type: BusinessType
     business_industry: str
     business_description: str
-    business_phones: List[str] = Field(..., min_items=1, max_items=4)
-    business_emails: List[str] = Field(..., min_items=1, max_items=5)
-    business_addresses: List[BusinessAddress] = Field(..., min_items=1, max_items=3)
-    bank_accounts: List[BankAccount] = Field(..., min_items=1, max_items=3)
+    business_phones: List[str] = Field(..., min_length=1, max_length=4)
+    business_emails: List[str] = Field(..., min_length=1, max_length=5)
+    business_addresses: List[BusinessAddress] = Field(..., min_length=1, max_length=3)
+    bank_accounts: List[BankAccount] = Field(..., min_length=1, max_length=3)
     
     model_config = ConfigDict(extra="forbid")
 

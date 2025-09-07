@@ -82,7 +82,7 @@ async def list_buyers_endpoint(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     sort_by: str = Query("id"),
-    sort_dir: str = Query("asc", regex="^(asc|desc)$"),
+    sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
     search: Optional[str] = None,
     db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),
 ):

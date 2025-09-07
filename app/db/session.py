@@ -1,7 +1,7 @@
 """Database Session Management
 Provides both async and sync database session functions
 """
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession , create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import create_engine
 from app.core.config import settings

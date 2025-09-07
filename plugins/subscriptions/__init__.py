@@ -1,3 +1,9 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
@@ -31,11 +37,11 @@ class Plugin(PluginBase):
         app.include_router(self.router)
 
     def register_events(self, app: FastAPI):
-        @app.on_event("startup")
+        
         async def startup():
             print(f"[{self.slug}] plugin ready with config:", self.config.dict())
 
-        @app.on_event("shutdown")
+        
         async def shutdown():
             print(f"[{self.slug}] plugin shutting down")
 

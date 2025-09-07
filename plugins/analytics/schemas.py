@@ -2,7 +2,7 @@
 Analytics & Reporting System Schemas
 Comprehensive business intelligence and reporting for the B2B marketplace
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -121,11 +121,12 @@ class AnalyticsEventOut(AnalyticsEventBase):
     user_id: Optional[int] = None
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Business Metrics Schemas
+)
 class BusinessMetricsBase(BaseModel):
     date: datetime
     
@@ -183,11 +184,12 @@ class BusinessMetricsOut(BusinessMetricsBase):
     id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # User Analytics Schemas
+)
 class UserAnalyticsBase(BaseModel):
     date: datetime
     
@@ -235,11 +237,12 @@ class UserAnalyticsOut(UserAnalyticsBase):
     user_id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Seller Analytics Schemas
+)
 class SellerAnalyticsBase(BaseModel):
     date: datetime
     
@@ -290,11 +293,12 @@ class SellerAnalyticsOut(SellerAnalyticsBase):
     seller_id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Product Analytics Schemas
+)
 class ProductAnalyticsBase(BaseModel):
     date: datetime
     
@@ -331,11 +335,12 @@ class ProductAnalyticsOut(ProductAnalyticsBase):
     product_id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Financial Report Schemas
+)
 class FinancialReportBase(BaseModel):
     report_date: datetime
     report_type: str = Field(..., max_length=50)
@@ -379,11 +384,12 @@ class FinancialReportOut(FinancialReportBase):
     id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Performance Metrics Schemas
+)
 class PerformanceMetricsBase(BaseModel):
     timestamp: datetime
     metric_type: str = Field(..., max_length=50)
@@ -405,11 +411,12 @@ class PerformanceMetricsOut(PerformanceMetricsBase):
     user_id: Optional[int] = None
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Report Template Schemas
+)
 class ReportTemplateBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
@@ -442,11 +449,12 @@ class ReportTemplateOut(ReportTemplateBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Scheduled Report Schemas
+)
 class ScheduledReportBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
@@ -480,11 +488,12 @@ class ScheduledReportOut(ScheduledReportBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Report Execution Schemas
+)
 class ReportExecutionBase(BaseModel):
     report_name: str = Field(..., min_length=1, max_length=255)
     execution_type: str = Field(..., max_length=20)
@@ -510,11 +519,12 @@ class ReportExecutionOut(ReportExecutionBase):
     started_at: datetime
     completed_at: Optional[datetime] = None
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Dashboard Schemas
+)
 class DashboardBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
@@ -547,11 +557,12 @@ class DashboardOut(DashboardBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Data Export Schemas
+)
 class DataExportBase(BaseModel):
     export_type: str = Field(..., max_length=50)
     export_format: ExportFormat
@@ -580,11 +591,12 @@ class DataExportOut(DataExportBase):
     completed_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Request/Response Schemas
+)
 class AnalyticsEventListResponse(BaseModel):
     events: List[AnalyticsEventOut]
     total: int

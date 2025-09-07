@@ -723,7 +723,7 @@ def check_permission(
 @router.get("/search", response_model=Dict[str, Any])
 def admin_search(
     query: str = Query(..., min_length=1),
-    search_type: str = Query(..., regex="^(users|products|orders|payments|tickets)$"),
+    search_type: str = Query(..., pattern="^(users|products|orders|payments|tickets)$"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(db_dep),

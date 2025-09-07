@@ -1,3 +1,9 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
@@ -20,7 +26,6 @@ class Plugin(PluginBase):
         from plugins.i18n.routes import router as i18n_router
         self.router.include_router(i18n_router, prefix=f"/{self.slug}", tags=["i18n"])
         app.include_router(self.router)
-
 
 
 

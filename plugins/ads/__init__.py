@@ -1,3 +1,9 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
 """
 Enhanced Advertising System Plugin
 Provides advanced advertising capabilities for the B2B marketplace
@@ -29,7 +35,6 @@ class Plugin(PluginBase):
         pass
 
 __all__ = ["Plugin"]
-
 
 
 

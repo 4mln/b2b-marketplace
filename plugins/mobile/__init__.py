@@ -1,3 +1,9 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
 """
 Mobile API Optimization Plugin
 Comprehensive mobile-optimized API functionality for the B2B marketplace
@@ -53,11 +59,11 @@ class Plugin(PluginBase):
     # Startup / shutdown events
     # -----------------------------
     def register_events(self, app: FastAPI):
-        @app.on_event("startup")
+        
         async def startup():
             print(f"[{self.slug}] plugin ready with config:", self.config.dict())
 
-        @app.on_event("shutdown")
+        
         async def shutdown():
             print(f"[{self.slug}] plugin shutting down")
 
@@ -70,5 +76,4 @@ class Plugin(PluginBase):
             print(f"[{self.slug}] DB initialization completed (placeholder)")
 
 __all__ = ["Plugin", "Config", "router"]
-
 

@@ -2,7 +2,7 @@
 Notification System Schemas
 Comprehensive notification capabilities for the B2B marketplace
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -128,11 +128,12 @@ class NotificationOut(NotificationBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Notification Delivery Attempt Schemas
+)
 class NotificationDeliveryAttemptBase(BaseModel):
     channel: NotificationChannel
     status: str
@@ -165,11 +166,12 @@ class NotificationDeliveryAttemptOut(NotificationDeliveryAttemptBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Notification Template Schemas
+)
 class NotificationTemplateBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     type: NotificationType
@@ -214,11 +216,12 @@ class NotificationTemplateOut(NotificationTemplateBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # User Notification Preference Schemas
+)
 class UserNotificationPreferenceBase(BaseModel):
     notification_type: NotificationType
     in_app_enabled: bool = True
@@ -230,7 +233,7 @@ class UserNotificationPreferenceBase(BaseModel):
     timezone: Optional[str] = None
     frequency: str = "immediate"  # immediate, daily, weekly, never
     
-    @validator('quiet_hours_start', 'quiet_hours_end')
+    @field_validator('quiet_hours_start', 'quiet_hours_end')
     def validate_time_format(cls, v):
         if v is not None:
             try:
@@ -263,11 +266,12 @@ class UserNotificationPreferenceOut(UserNotificationPreferenceBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Notification Subscription Schemas
+)
 class NotificationSubscriptionBase(BaseModel):
     topic: str = Field(..., min_length=1, max_length=100)
     entity_type: Optional[str] = Field(None, max_length=50)
@@ -291,11 +295,12 @@ class NotificationSubscriptionOut(NotificationSubscriptionBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Notification Batch Schemas
+)
 class NotificationBatchBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
@@ -334,11 +339,12 @@ class NotificationBatchOut(NotificationBatchBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Notification Webhook Schemas
+)
 class NotificationWebhookBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     url: str = Field(..., min_length=1, max_length=500)
@@ -371,11 +377,12 @@ class NotificationWebhookOut(NotificationWebhookBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Notification Analytics Schemas
+)
 class NotificationAnalyticsBase(BaseModel):
     date: datetime
     total_sent: int = 0
@@ -399,11 +406,12 @@ class NotificationAnalyticsOut(NotificationAnalyticsBase):
     id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Request/Response Schemas
+)
 class NotificationListResponse(BaseModel):
     notifications: List[NotificationOut]
     total: int

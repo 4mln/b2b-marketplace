@@ -1,3 +1,9 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
 """
 Messaging and Chat System Plugin
 Provides real-time messaging capabilities for the B2B marketplace
@@ -29,5 +35,4 @@ class Plugin(PluginBase):
         pass
 
 __all__ = ["Plugin"]
-
 

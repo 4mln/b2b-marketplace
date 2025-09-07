@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -20,8 +20,9 @@ class WalletOut(WalletBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
+    )
 
 class TransactionBase(BaseModel):
     amount: float
@@ -66,3 +67,5 @@ class WalletBalance(BaseModel):
 class UserWallets(BaseModel):
     user_id: int
     wallets: List[WalletBalance]
+
+    

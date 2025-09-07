@@ -2,7 +2,7 @@
 Admin Dashboard System Schemas
 Comprehensive administrative capabilities for the B2B marketplace
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, ConfigDict
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -101,11 +101,12 @@ class AdminUserOut(AdminUserBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Admin Action Schemas
+)
 class AdminActionBase(BaseModel):
     action_type: AdminActionType
     target_type: Optional[str] = None
@@ -132,11 +133,12 @@ class AdminActionOut(AdminActionBase):
     created_at: datetime
     completed_at: Optional[datetime] = None
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # System Config Schemas
+)
 class SystemConfigBase(BaseModel):
     key: str = Field(..., max_length=255)
     value: Optional[str] = None
@@ -162,11 +164,12 @@ class SystemConfigOut(SystemConfigBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Audit Log Schemas
+)
 class AuditLogBase(BaseModel):
     event_type: str = Field(..., max_length=100)
     event_category: Optional[str] = Field(None, max_length=100)
@@ -190,11 +193,12 @@ class AuditLogOut(AuditLogBase):
     admin_user_id: Optional[int] = None
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Support Ticket Schemas
+)
 class SupportTicketBase(BaseModel):
     subject: str = Field(..., max_length=255)
     description: str
@@ -224,11 +228,12 @@ class SupportTicketOut(SupportTicketBase):
     updated_at: datetime
     resolved_at: Optional[datetime] = None
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Support Message Schemas
+)
 class SupportMessageBase(BaseModel):
     content: str
     is_internal: bool = False
@@ -245,11 +250,12 @@ class SupportMessageOut(SupportMessageBase):
     admin_user_id: Optional[int] = None
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Content Moderation Schemas
+)
 class ContentModerationBase(BaseModel):
     content_type: str = Field(..., max_length=100)
     content_id: int
@@ -278,11 +284,12 @@ class ContentModerationOut(ContentModerationBase):
     created_at: datetime
     reviewed_at: Optional[datetime] = None
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # System Metrics Schemas
+)
 class SystemMetricsBase(BaseModel):
     metric_name: str = Field(..., max_length=255)
     metric_value: float
@@ -299,11 +306,12 @@ class SystemMetricsOut(SystemMetricsBase):
     id: int
     timestamp: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Admin Dashboard Schemas
+)
 class AdminDashboardBase(BaseModel):
     name: str = Field(..., max_length=255)
     description: Optional[str] = None
@@ -334,11 +342,12 @@ class AdminDashboardOut(AdminDashboardBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Admin Notification Schemas
+)
 class AdminNotificationBase(BaseModel):
     title: str = Field(..., max_length=255)
     message: str
@@ -364,11 +373,12 @@ class AdminNotificationOut(AdminNotificationBase):
     created_at: datetime
     read_at: Optional[datetime] = None
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # IP Blocklist Schemas
+)
 class IPBlocklistBase(BaseModel):
     ip_address: str = Field(..., max_length=45)
     reason: str
@@ -391,11 +401,12 @@ class IPBlocklistOut(IPBlocklistBase):
     added_by: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Admin Report Schemas
+)
 class AdminReportBase(BaseModel):
     report_name: str = Field(..., max_length=255)
     report_type: str = Field(..., max_length=100)
@@ -423,11 +434,12 @@ class AdminReportOut(AdminReportBase):
     created_at: datetime
     completed_at: Optional[datetime] = None
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Dashboard Overview Schemas
+)
 class DashboardOverview(BaseModel):
     total_users: int
     total_sellers: int

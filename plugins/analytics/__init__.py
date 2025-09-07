@@ -1,3 +1,9 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
 """
 Analytics & Reporting System Plugin
 Comprehensive business intelligence and reporting for the B2B marketplace
@@ -46,11 +52,11 @@ class Plugin(PluginBase):
     # Startup / shutdown events
     # -----------------------------
     def register_events(self, app: FastAPI):
-        @app.on_event("startup")
+        
         async def startup():
             print(f"[{self.slug}] plugin ready with config:", self.config.dict())
 
-        @app.on_event("shutdown")
+        
         async def shutdown():
             print(f"[{self.slug}] plugin shutting down")
 

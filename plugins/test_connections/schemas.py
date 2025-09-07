@@ -8,6 +8,7 @@ class ConnectionTestOut(BaseModel):
     status: str
     checked_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
+)
 

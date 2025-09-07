@@ -39,11 +39,12 @@ class LanguageOut(LanguageBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Translation Schemas
+)
 class TranslationBase(BaseModel):
     key: str = Field(..., max_length=255)
     value: str
@@ -67,11 +68,12 @@ class TranslationOut(TranslationBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Currency Schemas
+)
 class CurrencyBase(BaseModel):
     code: str = Field(..., max_length=10)
     name: str = Field(..., max_length=100)
@@ -98,11 +100,12 @@ class CurrencyOut(CurrencyBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Timezone Schemas
+)
 class TimezoneBase(BaseModel):
     name: str = Field(..., max_length=100)
     offset: str = Field(..., max_length=10)
@@ -125,11 +128,12 @@ class TimezoneOut(TimezoneBase):
     id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Date Format Schemas
+)
 class DateFormatBase(BaseModel):
     name: str = Field(..., max_length=100)
     format_string: str = Field(..., max_length=50)
@@ -154,11 +158,12 @@ class DateFormatOut(DateFormatBase):
     id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # User Preference Schemas
+)
 class UserLanguagePreferenceBase(BaseModel):
     language_id: int
     is_primary: bool = True
@@ -174,7 +179,7 @@ class UserLanguagePreferenceOut(UserLanguagePreferenceBase):
     created_at: datetime
     language: LanguageOut
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
@@ -234,6 +239,7 @@ class UserDateFormatPreferenceOut(UserDateFormatPreferenceBase):
 
 
 # Response Schemas
+)
 class LanguageListResponse(BaseModel):
     languages: List[LanguageOut]
     total: int

@@ -2,7 +2,7 @@
 Enhanced Advertising System Schemas
 Advanced targeting, bidding, and analytics capabilities
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator,ConfigDict
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -156,11 +156,12 @@ class AdOut(AdBase):
     approved_at: Optional[datetime] = None
     last_served_at: Optional[datetime] = None
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Campaign Schemas
+)
 class AdCampaignBase(BaseModel):
     name: str = Field(..., max_length=255)
     description: Optional[str] = None
@@ -200,11 +201,12 @@ class AdCampaignOut(AdCampaignBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Analytics Schemas
+)
 class AdAnalyticsBase(BaseModel):
     date: datetime
     impressions: int = 0
@@ -231,11 +233,12 @@ class AdAnalyticsOut(AdAnalyticsBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 # Impression and Click Schemas
+
 class AdImpressionBase(BaseModel):
     page_url: Optional[str] = Field(None, max_length=500)
     referrer_url: Optional[str] = Field(None, max_length=500)
@@ -261,9 +264,9 @@ class AdImpressionOut(AdImpressionBase):
     session_id: Optional[str] = None
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
-
+    )
 
 class AdClickBase(BaseModel):
     click_position: Optional[Dict[str, int]] = None
@@ -295,9 +298,10 @@ class AdClickOut(AdClickBase):
     
     class Config:
         from_attributes = True
-
+    
 
 # Conversion Schemas
+
 class AdConversionBase(BaseModel):
     conversion_type: str = Field(..., max_length=100)
     conversion_value: Optional[float] = None
@@ -317,11 +321,12 @@ class AdConversionOut(AdConversionBase):
     user_id: Optional[int] = None
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Bidding Schemas
+)
 class AdBidBase(BaseModel):
     bid_amount: float = Field(..., gt=0)
     bid_type: BiddingType
@@ -343,11 +348,12 @@ class AdBidOut(AdBidBase):
     auction_id: str
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Ad Space Schemas
+)
 class AdSpaceBase(BaseModel):
     name: str = Field(..., max_length=255)
     description: Optional[str] = None
@@ -390,11 +396,12 @@ class AdSpaceOut(AdSpaceBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Blocklist Schemas
+)
 class AdBlocklistBase(BaseModel):
     domain: Optional[str] = Field(None, max_length=255)
     url_pattern: Optional[str] = Field(None, max_length=500)
@@ -420,11 +427,12 @@ class AdBlocklistOut(AdBlocklistBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Response Schemas
+)
 class AdListResponse(BaseModel):
     ads: List[AdOut]
     total: int

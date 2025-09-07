@@ -1,3 +1,8 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
 
 """
 Admin Dashboard System Plugin
@@ -30,7 +35,6 @@ class Plugin(PluginBase):
         pass
 
 __all__ = ["Plugin"]
-
 
 
 

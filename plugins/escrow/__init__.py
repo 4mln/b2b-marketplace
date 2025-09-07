@@ -1,3 +1,9 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
 from fastapi import FastAPI, APIRouter
 from app.core.plugins.base import PluginBase, PluginConfig
 
@@ -25,7 +31,6 @@ class Plugin(PluginBase):
         from plugins.escrow.models import Base
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-
 
 
 

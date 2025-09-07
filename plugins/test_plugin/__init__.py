@@ -1,3 +1,9 @@
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
 """Test Plugin
 A simple test plugin to verify plugin loading works
 """

@@ -1,7 +1,7 @@
 """
 Messaging and Chat System Schemas
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict , field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -50,11 +50,12 @@ class ChatRoomOut(ChatRoomBase):
     last_message: Optional[Dict[str, Any]] = None
     unread_count: int = 0
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Message Schemas
+)
 class MessageBase(BaseModel):
     content: str
     message_type: MessageType = MessageType.TEXT
@@ -82,8 +83,8 @@ class MessageOut(MessageBase):
     sender_avatar: Optional[str] = None
     read_by: List[int] = []
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes = True)
 
 
 class MessageResponse(MessageOut):
@@ -98,6 +99,7 @@ class UnreadMessagesResponse(BaseModel):
 
 
 # Participant Schemas
+
 class ChatParticipantBase(BaseModel):
     user_id: int
     is_admin: bool = False
@@ -122,11 +124,12 @@ class ChatParticipantOut(ChatParticipantBase):
     user_avatar: Optional[str] = None
     user_online: bool = False
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Invitation Schemas
+)
 class ChatInvitationBase(BaseModel):
     invited_user_id: int
 
@@ -150,11 +153,12 @@ class ChatInvitationOut(ChatInvitationBase):
     inviter_name: str
     invited_user_name: str
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Response Schemas
+)
 class ChatListResponse(BaseModel):
     chats: List[ChatRoomOut]
     total: int

@@ -2,7 +2,7 @@
 Advanced Search & Filters System Schemas
 Comprehensive search capabilities for the B2B marketplace
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -173,11 +173,12 @@ class SearchIndexOut(SearchIndexBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Search Query Schemas
+)
 class SearchQueryBase(BaseModel):
     query_text: str
     search_type: str
@@ -213,11 +214,12 @@ class SearchQueryOut(SearchQueryBase):
     referrer: Optional[str] = None
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Search Filter Schemas
+)
 class SearchFilterBase(BaseModel):
     name: str
     display_name: str
@@ -250,11 +252,12 @@ class SearchFilterOut(SearchFilterBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Search Suggestion Schemas
+)
 class SearchSuggestionBase(BaseModel):
     suggestion_text: str
     suggestion_type: str
@@ -282,11 +285,12 @@ class SearchSuggestionOut(SearchSuggestionBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Search Analytics Schemas
+)
 class SearchAnalyticsBase(BaseModel):
     date: datetime
     total_queries: int = 0
@@ -310,11 +314,12 @@ class SearchAnalyticsOut(SearchAnalyticsBase):
     id: int
     created_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Search Synonym Schemas
+)
 class SearchSynonymBase(BaseModel):
     primary_term: str
     synonyms: List[str]
@@ -339,11 +344,12 @@ class SearchSynonymOut(SearchSynonymBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Search Blacklist Schemas
+)
 class SearchBlacklistBase(BaseModel):
     term: str
     reason: Optional[str] = None
@@ -368,11 +374,12 @@ class SearchBlacklistOut(SearchBlacklistBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Search Boost Schemas
+)
 class SearchBoostBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -403,11 +410,12 @@ class SearchBoostOut(SearchBoostBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Response Schemas
+)
 class SearchIndexListResponse(BaseModel):
     items: List[SearchIndexOut]
     total: int

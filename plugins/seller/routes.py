@@ -84,7 +84,7 @@ async def list_sellers_endpoint(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=100, description="Results per page"),
     sort_by: str = Query("id", description="Field to sort by"),
-    sort_dir: str = Query("asc", regex="^(asc|desc)$", description="Sort direction"),
+    sort_dir: str = Query("asc", pattern="^(asc|desc)$", description="Sort direction"),
     search: Optional[str] = Query(None, description="Search term for seller name"),
     subscription_type: Optional[SubscriptionType] = Query(None, description="Filter by subscription type"),
     db: AsyncSession = Depends(__import__("app.db.session", fromlist=["get_session"]).get_session),

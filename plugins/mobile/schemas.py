@@ -2,7 +2,7 @@
 Mobile API Optimization Schemas
 Pydantic schemas for mobile-optimized API functionality
 """
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator,ConfigDict
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -85,11 +85,12 @@ class MobileAppSessionOut(MobileAppSessionBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # API Call Models
+)
 class MobileAPICallBase(BaseModel):
     endpoint: str = Field(..., description="API endpoint")
     method: str = Field(..., description="HTTP method")
@@ -112,11 +113,12 @@ class MobileAPICallOut(MobileAPICallBase):
     session_id: int
     created_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Cache Models
+)
 class APICacheBase(BaseModel):
     endpoint: str = Field(..., description="API endpoint")
     method: str = Field(..., description="HTTP method")
@@ -149,11 +151,12 @@ class APICacheOut(APICacheBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # App Configuration Models
+)
 class MobileAppConfigBase(BaseModel):
     app_version: str = Field(..., description="App version")
     platform: str = Field(..., description="Platform (ios/android)")
@@ -181,11 +184,12 @@ class MobileAppConfigOut(MobileAppConfigBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Feature Flag Models
+)
 class MobileFeatureFlagBase(BaseModel):
     feature_name: str = Field(..., description="Feature name")
     description: Optional[str] = Field(None, description="Feature description")
@@ -216,11 +220,12 @@ class MobileFeatureFlagOut(MobileFeatureFlagBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Performance Metrics Models
+)
 class MobilePerformanceMetricBase(BaseModel):
     metric_type: str = Field(..., description="Metric type")
     metric_name: str = Field(..., description="Metric name")
@@ -238,11 +243,12 @@ class MobilePerformanceMetricOut(MobilePerformanceMetricBase):
     session_id: int
     created_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Offline Queue Models
+)
 class MobileOfflineQueueBase(BaseModel):
     action_type: str = Field(..., description="Action type")
     action_data: Dict[str, Any] = Field(..., description="Action data")
@@ -271,11 +277,12 @@ class MobileOfflineQueueOut(MobileOfflineQueueBase):
     created_at: datetime
     processed_at: Optional[datetime] = None
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Push Notification Models
+)
 class MobilePushNotificationBase(BaseModel):
     notification_type: str = Field(..., description="Notification type")
     title: str = Field(..., description="Notification title")
@@ -304,11 +311,12 @@ class MobilePushNotificationOut(MobilePushNotificationBase):
     error_message: Optional[str] = None
     created_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Sync State Models
+)
 class MobileSyncStateBase(BaseModel):
     entity_type: str = Field(..., description="Entity type")
     sync_token: Optional[str] = Field(None, description="Sync token")
@@ -336,11 +344,12 @@ class MobileSyncStateOut(MobileSyncStateBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
 # Request/Response Models
+)
 class MobileSessionRequest(BaseModel):
     device_id: str
     device_type: DeviceType

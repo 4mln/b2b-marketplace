@@ -31,7 +31,7 @@ class OrderItemOut(OrderItemBase):
     id: int
     subtotal: float
 
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
 
 
@@ -62,4 +62,5 @@ class OrderOut(OrderBase):
     updated_at: datetime
 
     class Config:
+)
         from_attributes = True

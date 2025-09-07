@@ -1,17 +1,34 @@
 import pytest
 import asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from app.main import app
 from app.core.db import get_session
 from app.core.config import settings
+import pytest_asyncio
+import logging
+
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("asyncpg").setLevel(logging.WARNING)
+
+
 
 # Create test database URL
 TEST_DATABASE_URL = settings.DATABASE_URL.replace("/b2b_marketplace", "/test_b2b_marketplace")
 
 # Create test engine and session
-test_engine = create_async_engine(TEST_DATABASE_URL)
+@pytest_asyncio.fixture(scope="session")
+async def test_engine()-> AsyncEngine:
+    """Create an async engine inside the event loop."""
+    from sqlalchemy.ext.asyncio import create_async_engine
+
+    engine = create_async_engine(TEST_DATABASE_URL, echo=True)
+    try:
+        yield engine
+    finally:
+        await engine.dispose()
+
 TestingSessionLocal = sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -24,7 +41,7 @@ def event_loop():
 
 
 @pytest.fixture(scope="session")
-async def setup_test_db():
+async def setup_test_db(test_engine):
     """Create test database tables."""
     async with test_engine.begin() as conn:
         # Import all models to ensure they are registered with metadata
@@ -162,3 +179,5 @@ def auth_headers_user2(test_user_2):
     from plugins.auth.jwt import create_access_token
     access_token = create_access_token(data={"sub": test_user_2.email})
     return {"Authorization": f"Bearer {access_token}"}
+# Use scope argument for event loop if needed
+# @pytest.mark.asyncio(scope='module')

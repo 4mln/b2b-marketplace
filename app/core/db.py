@@ -1,5 +1,6 @@
 # app/core/db.py
 # Import all database components from app.db.session
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from app.db.base import Base
 from app.db.session import (
     async_engine,
