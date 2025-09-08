@@ -41,10 +41,10 @@ class LanguageOut(LanguageBase):
     
     model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 # Translation Schemas
-)
 class TranslationBase(BaseModel):
     key: str = Field(..., max_length=255)
     value: str
@@ -70,10 +70,10 @@ class TranslationOut(TranslationBase):
     
     model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 # Currency Schemas
-)
 class CurrencyBase(BaseModel):
     code: str = Field(..., max_length=10)
     name: str = Field(..., max_length=100)
@@ -102,10 +102,10 @@ class CurrencyOut(CurrencyBase):
     
     model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 # Timezone Schemas
-)
 class TimezoneBase(BaseModel):
     name: str = Field(..., max_length=100)
     offset: str = Field(..., max_length=10)
@@ -130,10 +130,10 @@ class TimezoneOut(TimezoneBase):
     
     model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 # Date Format Schemas
-)
 class DateFormatBase(BaseModel):
     name: str = Field(..., max_length=100)
     format_string: str = Field(..., max_length=50)
@@ -160,10 +160,10 @@ class DateFormatOut(DateFormatBase):
     
     model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 # User Preference Schemas
-)
 class UserLanguagePreferenceBase(BaseModel):
     language_id: int
     is_primary: bool = True
@@ -181,6 +181,7 @@ class UserLanguagePreferenceOut(UserLanguagePreferenceBase):
     
     model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 class UserCurrencyPreferenceBase(BaseModel):
@@ -198,8 +199,9 @@ class UserCurrencyPreferenceOut(UserCurrencyPreferenceBase):
     created_at: datetime
     currency: CurrencyOut
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 class UserTimezonePreferenceBase(BaseModel):
@@ -216,8 +218,9 @@ class UserTimezonePreferenceOut(UserTimezonePreferenceBase):
     created_at: datetime
     timezone: TimezoneOut
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 class UserDateFormatPreferenceBase(BaseModel):
@@ -234,12 +237,12 @@ class UserDateFormatPreferenceOut(UserDateFormatPreferenceBase):
     created_at: datetime
     date_format: DateFormatOut
     
-    class Config:
+    model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 # Response Schemas
-)
 class LanguageListResponse(BaseModel):
     languages: List[LanguageOut]
     total: int

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field , ConfigDict
 
 
 class OrderStatus(str, Enum):
@@ -33,6 +33,7 @@ class OrderItemOut(OrderItemBase):
 
     model_config = ConfigDict(
         from_attributes = True
+    )
 
 
 class OrderBase(BaseModel):
@@ -61,6 +62,6 @@ class OrderOut(OrderBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-)
+    model_config = ConfigDict(
         from_attributes = True
+    )
