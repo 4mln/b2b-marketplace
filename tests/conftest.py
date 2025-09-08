@@ -3,6 +3,7 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from app.main import app
 from app.core.db import get_session
 from app.core.config import settings
@@ -102,12 +103,12 @@ def override_get_db(db_session):
     return _override_get_db
 
 
-@pytest.fixture
-def client(override_get_db):
-    """Create a test client with the test database."""
+@pytest_asyncio.fixture
+async def client(override_get_db):
+    """Create an async test client with the test database."""
     app.dependency_overrides[get_session] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
+    async with AsyncClient(app=app, base_url="http://testserver") as ac:
+        yield ac
     app.dependency_overrides.clear()
 
 

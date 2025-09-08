@@ -12,7 +12,10 @@ from app.core.openapi import enhance_endpoint_docs
 from plugins.user.docs import user_docs
 from sqlalchemy import select
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/users",
+    tags=["Users"], 
+)
 
 # -----------------------------
 # Create User
