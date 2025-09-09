@@ -12,6 +12,7 @@ class Rating(Base):
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     rater_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     ratee_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    seller_id = Column(Integer, ForeignKey("sellers.id"), nullable=False)
     quality = Column(Float, nullable=False)
     timeliness = Column(Float, nullable=False)
     communication = Column(Float, nullable=False)
@@ -22,6 +23,7 @@ class Rating(Base):
     order = relationship("Order")
     rater = relationship("User", foreign_keys=[rater_id])
     ratee = relationship("User", foreign_keys=[ratee_id])
+    seller = relationship("plugins.seller.models.Seller", back_populates="ratings")
 
 
 

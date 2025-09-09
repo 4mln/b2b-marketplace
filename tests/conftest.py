@@ -48,7 +48,7 @@ async def setup_test_db(test_engine):
         # Import all models to ensure they are registered with metadata
         from plugins.orders.models import Base as OrdersBase
         from plugins.products.models import Base as ProductsBase
-        from plugins.user.models import Base as UserBase
+        from plugins.user.models import Base as UserBase, User, Seller
         from plugins.rfq.models import Base as RFQBase
         from plugins.payments.models import Base as PaymentsBase
         from plugins.admin.models import Base as AdminBase
@@ -75,7 +75,7 @@ async def setup_test_db(test_engine):
     async with test_engine.begin() as conn:
         from plugins.orders.models import Base as OrdersBase
         from plugins.products.models import Base as ProductsBase
-        from plugins.user.models import Base as UserBase
+        from plugins.user.models import Base as UserBase, User, Seller
         from plugins.rfq.models import Base as RFQBase
         from plugins.payments.models import Base as PaymentsBase
         from plugins.admin.models import Base as AdminBase
@@ -102,11 +102,18 @@ def override_get_db(db_session):
         yield db_session
     return _override_get_db
 
+@pytest_asyncio.fixture(scope="session")
+async def app_with_plugins(test_engine):
+    from app.core.plugins.loader import PluginLoader
+    loader = PluginLoader()
+    await loader.load_all(app, test_engine)
+    return app
+
 
 @pytest_asyncio.fixture
-async def client(override_get_db):
+async def client(app_with_plugins, override_get_db):
     """Create an async test client with the test database."""
-    app.dependency_overrides[get_session] = override_get_db
+    app_with_plugins.dependency_overrides[get_session] = override_get_db
     async with AsyncClient(app=app, base_url="http://testserver") as ac:
         yield ac
     app.dependency_overrides.clear()
@@ -130,11 +137,12 @@ async def test_user(db_session):
 
 
 @pytest.fixture
-def auth_headers(test_user):
+async def auth_headers(test_user):
     """Create authentication headers for test user."""
     from plugins.auth.jwt import create_access_token
-    
-    access_token = create_access_token(data={"sub": test_user.email})
+    from plugins.user.models import User
+    user = await test_user
+    access_token = create_access_token(data={"sub": user.email})
     return {"Authorization": f"Bearer {access_token}"}
 
 
@@ -176,9 +184,10 @@ async def test_user_2(db_session):
 
 
 @pytest.fixture
-def auth_headers_user2(test_user_2):
+async def auth_headers_user2(test_user_2):
     from plugins.auth.jwt import create_access_token
-    access_token = create_access_token(data={"sub": test_user_2.email})
+    user2 = await test_user_2
+    access_token = create_access_token(data={"sub": user2.email})
     return {"Authorization": f"Bearer {access_token}"}
 # Use scope argument for event loop if needed
 # @pytest.mark.asyncio(scope='module')

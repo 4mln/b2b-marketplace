@@ -64,6 +64,11 @@ class Ad(Base):
     ad_type = Column(Enum(AdType), nullable=False)
     status = Column(Enum(AdStatus), default=AdStatus.DRAFT)
     
+    # Link to AdCampaign
+    campaign_id = Column(Integer, ForeignKey("ad_campaigns.id"), nullable=True)
+    campaign = relationship("AdCampaign", back_populates="ads")
+
+
     # Media content
     image_url = Column(String(500), nullable=True)
     video_url = Column(String(500), nullable=True)

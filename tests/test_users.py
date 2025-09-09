@@ -23,7 +23,7 @@ from sqlalchemy.orm import sessionmaker
 
 # --- Adjust these imports if your project structure differs ---
 from app.main import app  # FastAPI app
-from app.core.db import engine, get_async_session  # engine and dependency to override
+from app.core.db import engine, get_session  # engine and dependency to override
 # ------------------------------------------------------------
 
 faker = Faker()
@@ -79,13 +79,13 @@ async def async_client(db_transaction_fixture, monkeypatch):
 
     # override the app dependency that provides DB sessions
     # NOTE: if your dependency name is different, edit import at top (get_async_session)
-    app.dependency_overrides[get_async_session] = db_transaction_fixture
+    app.dependency_overrides[get_session] = db_transaction_fixture
 
     async with AsyncClient(app=app, base_url="http://testserver") as client:
         yield client
 
     # clean up override
-    app.dependency_overrides.pop(get_async_session, None)
+    app.dependency_overrides.pop(get_session, None)
 
 
 # ---------- Helper functions used across tests ----------

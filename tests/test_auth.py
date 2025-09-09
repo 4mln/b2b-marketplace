@@ -1,84 +1,94 @@
 import pytest
 from fastapi import status
-import plugins.admin.crud as admin_crud
+from httpx import AsyncClient
+from app.main import app  # Make sure this is your FastAPI instance with auth router included
 
-
+# ---------------------- TEST SIGNUP ----------------------
 @pytest.mark.asyncio
-async def test_signup(client):
-    user_data = {
-        "email": "newuser@example.com",
-        "password": "securepassword123",
-        "full_name": "New User"
-    }
-    
-    response = await client.post("/auth/signup", json=user_data)
-    assert response.status_code == status.HTTP_201_CREATED
-    data = response.json()
-    assert data["email"] == user_data["email"]
-    assert data["full_name"] == user_data["full_name"]
-    assert "id" in data
-    assert "hashed_password" not in data  # Password should not be returned
+async def test_signup():
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        user_data = {
+            "email": "newuser@example.com",
+            "password": "securepassword123",
+            "full_name": "New User"
+        }
+        response = await client.post("/api/v1/auth/signup", json=user_data)
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["email"] == user_data["email"]
+        assert data["full_name"] == user_data["full_name"]
+        assert "id" in data
+        assert "hashed_password" not in data
 
 
+# ---------------------- TEST SIGNUP DUPLICATE ----------------------
 @pytest.mark.asyncio
-async def test_signup_duplicate_email(client, test_user):
-    # Try to create a user with the same email as test_user
-    user_data = {
-        "email": "test@example.com",  # Same as test_user fixture
-        "password": "password456",
-        "full_name": "Duplicate User"
-    }
-    
-    response = await client.post("/auth/signup", json=user_data)
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "already exists" in response.json()["detail"].lower()
+async def test_signup_duplicate_email(test_user):
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        user = await test_user  # ✅ Await the fixture
+        user_data = {
+            "email": user["email"],  # Use the fixture email
+            "password": "password456",
+            "full_name": "Duplicate User"
+        }
+        response = await client.post("/api/v1/auth/signup", json=user_data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "already exists" in response.json()["detail"].lower()
 
 
+# ---------------------- TEST LOGIN ----------------------
 @pytest.mark.asyncio
-async def test_login(client, test_user):
-    login_data = {
-        "username": "test@example.com",
-        "password": "password123"
-    }
-    
-    response = await client.post("/auth/token", data=login_data)
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
+async def test_login(test_user):
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        user = await test_user
+        login_data = {
+            "username": user["email"],
+            "password": "password123"
+        }
+        response = await client.post("/api/v1/auth/token", data=login_data)
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
 
 
+# ---------------------- TEST LOGIN INVALID ----------------------
 @pytest.mark.asyncio
-async def test_login_invalid_credentials(client):
-    login_data = {
-        "username": "nonexistent@example.com",
-        "password": "wrongpassword"
-    }
-    
-    response = await client.post("/auth/token", data=login_data)
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert "incorrect" in response.json()["detail"].lower()
+async def test_login_invalid_credentials():
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        login_data = {
+            "username": "nonexistent@example.com",
+            "password": "wrongpassword"
+        }
+        response = await client.post("/api/v1/auth/token", data=login_data)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "incorrect" in response.json()["detail"].lower()
 
 
+# ---------------------- TEST GET CURRENT USER ----------------------
 @pytest.mark.asyncio
-async def test_get_current_user(client, auth_headers):
-    response = await client.get("/auth/me", headers=auth_headers)
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert data["email"] == "test@example.com"
-    assert "id" in data
+async def test_get_current_user(auth_headers):
+    headers = await auth_headers  # ✅ Await the fixture
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        response = await client.get("/api/v1/auth/me", headers=headers)
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["email"] == "test@example.com"
+        assert "id" in data
 
 
+# ---------------------- TEST GET CURRENT USER INVALID TOKEN ----------------------
 @pytest.mark.asyncio
-async def test_get_current_user_invalid_token(client):
-    # Test with invalid token
-    invalid_headers = {"Authorization": "Bearer invalidtoken123"}
-    response = await client.get("/auth/me", headers=invalid_headers)
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+async def test_get_current_user_invalid_token():
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        invalid_headers = {"Authorization": "Bearer invalidtoken123"}
+        response = await client.get("api/v1/auth/me", headers=invalid_headers)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+# ---------------------- TEST GET CURRENT USER MISSING TOKEN ----------------------
 @pytest.mark.asyncio
-async def test_get_current_user_missing_token(client):
-    # Test with no token
-    response = await client.get("/auth/me")
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+async def test_get_current_user_missing_token():
+    async with AsyncClient(app=app, base_url="http://testserver") as client:
+        response = await client.get("api/v1/auth/me")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED

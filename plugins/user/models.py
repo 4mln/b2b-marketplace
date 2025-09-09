@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, Float, Boolean, String, DateTime, JSON, Enum as SQLAEnum, ForeignKey
+from plugins.seller.models import Seller
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
@@ -17,3 +18,9 @@ class User(Base):
     sellers = relationship("Seller", back_populates="user", cascade="all, delete-orphan")
     buyer = relationship("Buyer", back_populates="user", uselist=False)
     gamification = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
+
+    carts = relationship("Cart", back_populates="user", cascade="all, delete-orphan")
+    points = relationship("UserPoints", back_populates="user", cascade="all, delete-orphan")
+    buyer_orders = relationship("Order", back_populates="buyer", cascade="all, delete-orphan")
+
+

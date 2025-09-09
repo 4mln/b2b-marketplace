@@ -11,6 +11,7 @@ import jwt
 from datetime import datetime, timedelta
 
 from app.core.config import settings
+from app.db.session import get_session, get_db_sync
 from plugins.auth.models import User
 from plugins.auth.jwt import verify_token
 
@@ -19,7 +20,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme), 
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
+    db: AsyncSession = Depends(get_session)
 ) -> User:
     """Get current authenticated user from JWT token"""
     credentials_exception = HTTPException(
@@ -59,7 +60,7 @@ async def get_current_user(
 
 async def get_current_user_optional(
     token: Optional[str] = Depends(oauth2_scheme), 
-    db: AsyncSession = Depends(lambda: __import__("importlib").import_module("app.db.session").get_session)
+    db: AsyncSession = Depends(get_session)
 ) -> Optional[User]:
     """Get current user if authenticated, otherwise return None"""
     if not token:
@@ -72,7 +73,7 @@ async def get_current_user_optional(
 
 def get_current_user_sync(
     token: str = Depends(oauth2_scheme), 
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync)
+    db: Session = Depends(get_db_sync)
 ) -> User:
     """Synchronous version of get_current_user for sync routes"""
     credentials_exception = HTTPException(
@@ -102,7 +103,7 @@ def get_current_user_sync(
 
 def get_current_user_optional_sync(
     token: Optional[str] = Depends(oauth2_scheme), 
-    db: Session = Depends(lambda: __import__("importlib").import_module("app.db.session").get_db_sync)
+    db: Session = Depends(get_db_sync)
 ) -> Optional[User]:
     """Synchronous version of get_current_user_optional"""
     if not token:
