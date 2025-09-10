@@ -24,7 +24,7 @@ class Rating(Base):
     rater = relationship("User", foreign_keys=[rater_id])
     ratee = relationship("User", foreign_keys=[ratee_id])
     seller = relationship("plugins.seller.models.Seller", back_populates="ratings")
-
+    seller = relationship("Seller", back_populates="ratings")  # <- add this
 
 
 

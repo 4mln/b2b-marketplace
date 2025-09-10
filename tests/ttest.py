@@ -11,10 +11,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from faker import Faker
 
-
 # --------------------------- App & DB ---------------------------
-from app.core.db import Base  # Make sure Base is the declarative_base
-from app.db.session import get_session  # If you need it in plugins
+from app.core.db import Base  # declarative_base
+from app.db.session import get_session
 from app.core.plugins.loader import PluginLoader
 
 # Import all plugin models here so create_all sees them
@@ -30,10 +29,11 @@ from plugins.advanced_features.models import *
 from plugins.user.models import *
 from plugins.orders.models import *
 from plugins.products.models import *
+from plugins.ratings.models import *
+from plugins.buyer.models import *
 # ...repeat for all plugins with tables
 
 faker = Faker()
-
 
 # --------------------------- Helpers ---------------------------
 
@@ -74,7 +74,6 @@ def generate_generic_payload():
         "prompt": faker.sentence(),
     }
 
-
 # --------------------------- Test ---------------------------
 
 @pytest.mark.asyncio
@@ -91,23 +90,42 @@ async def test_plugins_full_advanced_smoke():
 
     # Insert minimal dummy FK data for users/products/etc.
     async with async_session() as session:
-        # Example: create 5 users
+        # --- Users (needed for seller_id etc.) ---
         from plugins.user.models import User
+        sellers = []
         for _ in range(5):
             user = User(
                 username=faker.user_name(),
                 email=faker.email(),
-                password="hashedpass"
+                hashed_password="hashedpass"
             )
             session.add(user)
-        # Example: create 5 products
+            sellers.append(user)
+        await session.flush()  # ensures IDs are available
+
+        # --- Guild (needed for guild_id FK in products) ---
+        from plugins.guilds.models import Guild
+        guild = Guild(
+            slug=faker.slug(),
+            name="Test Guild",
+            description="Test guild description"
+        )
+        session.add(guild)
+        await session.flush()
+
+        # --- Products linked to sellers + guild ---
         from plugins.products.models import Product
-        for _ in range(5):
+        for seller in sellers:
             product = Product(
+                seller_id=seller.id,
+                guild_id=guild.id,  # ✅ ensure valid FK
                 name=faker.word(),
-                price=10.0
+                price=10.0,
+                stock=10,
+                status="active"
             )
             session.add(product)
+
         await session.commit()
 
     # Load all plugins
