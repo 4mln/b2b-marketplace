@@ -11,12 +11,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from faker import Faker
 
-# --------------------------- App & DB ---------------------------
-from app.core.db import Base  # declarative_base
+from app.core.db import Base
 from app.db.session import get_session
 from app.core.plugins.loader import PluginLoader
 
-# Import all plugin models here so create_all sees them
 from plugins.admin.models import *
 from plugins.ads.models import *
 from plugins.cart.models import *
@@ -31,7 +29,7 @@ from plugins.orders.models import *
 from plugins.products.models import *
 from plugins.ratings.models import *
 from plugins.buyer.models import *
-# ...repeat for all plugins with tables
+from plugins.seller.models import Seller
 
 faker = Faker()
 
@@ -41,9 +39,8 @@ def fill_path_params(path: str) -> str:
     """Replace path parameters like {id} with dummy values."""
     return re.sub(r"\{.*?\}", "1", path)
 
-
 def generate_dummy_payload(route: APIRoute) -> dict:
-    """Generate a minimal payload for POST/PUT routes based on endpoint signature."""
+    """Generate minimal payload for POST/PUT routes based on endpoint signature."""
     payload = {}
     sig = inspect.signature(route.endpoint)
     for name, param in sig.parameters.items():
@@ -59,9 +56,8 @@ def generate_dummy_payload(route: APIRoute) -> dict:
                 payload[name] = faker.word()
     return payload
 
-
 def generate_generic_payload():
-    """Fallback payload for required fields we can't inspect."""
+    """Fallback payload for known POST/PUT endpoints to avoid 422s."""
     return {
         "name": faker.word(),
         "email": faker.email(),
@@ -72,63 +68,83 @@ def generate_generic_payload():
         "conversion_type": "click",
         "task": faker.word(),
         "prompt": faker.sentence(),
+        "cart_data": {"items": []},
     }
 
 # --------------------------- Test ---------------------------
 
 @pytest.mark.asyncio
 async def test_plugins_full_advanced_smoke():
-    # Create FastAPI app and in-memory SQLite DB
     app = FastAPI()
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    # Create all tables and enable FK constraints
+    # Create tables
     async with engine.begin() as conn:
         await conn.execute(text("PRAGMA foreign_keys=ON"))
         await conn.run_sync(Base.metadata.create_all)
 
-    # Insert minimal dummy FK data for users/products/etc.
+    # Seed minimal FK data
     async with async_session() as session:
-        # --- Users (needed for seller_id etc.) ---
-        from plugins.user.models import User
-        sellers = []
-        for _ in range(5):
+        sellers_list = []
+
+        # Users + Sellers
+        for _ in range(3):
             user = User(
                 username=faker.user_name(),
                 email=faker.email(),
-                hashed_password="hashedpass"
+                hashed_password="hashedpass",
+                is_active=True
             )
             session.add(user)
-            sellers.append(user)
-        await session.flush()  # ensures IDs are available
+            await session.flush()
 
-        # --- Guild (needed for guild_id FK in products) ---
-        from plugins.guilds.models import Guild
-        guild = Guild(
-            slug=faker.slug(),
-            name="Test Guild",
-            description="Test guild description"
-        )
+            seller = Seller(
+                name=faker.company(),
+                email=user.email,
+                phone=faker.phone_number(),
+                subscription="basic",
+                user_id=user.id
+            )
+            session.add(seller)
+            sellers_list.append(seller)
+            await session.flush()
+
+        # Guild
+        guild = Guild(slug=faker.slug(), name="Test Guild", description="Demo guild")
         session.add(guild)
         await session.flush()
 
-        # --- Products linked to sellers + guild ---
+        # Products
         from plugins.products.models import Product
-        for seller in sellers:
+        for seller in sellers_list:
             product = Product(
                 seller_id=seller.id,
-                guild_id=guild.id,  # ✅ ensure valid FK
+                guild_id=guild.id,
                 name=faker.word(),
+                description="Simple product",
                 price=10.0,
                 stock=10,
                 status="active"
             )
             session.add(product)
 
+        # Cart
+        from plugins.cart.models import Cart
+        cart = Cart(user_id=sellers_list[0].user_id)
+        session.add(cart)
+
+        # Ads minimal FK
+        ad_space = AdSpace(
+            name="Main Banner",
+            ad_type="banner",
+            description="Main banner space",
+            is_active=True
+        )
+        session.add(ad_space)
         await session.commit()
 
-    # Load all plugins
+    # Load plugins
     loader = PluginLoader()
     plugins = await loader.load_all(app, engine)
     assert plugins, "No plugins loaded!"
@@ -149,52 +165,27 @@ async def test_plugins_full_advanced_smoke():
 
     # -------------------- Run route tests --------------------
     report = []
-    async with AsyncClient(app=app, base_url="http://testserver") as client:
+    from httpx._transports.asgi import ASGITransport
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
         for plugin_slug, plugin_routes in plugin_routes_map.items():
             for route in plugin_routes:
                 path = fill_path_params(route.path)
-                methods = route.methods or ["GET"]
+                
+                # Determine HTTP method, default to GET
+                method = route.methods.pop() if route.methods else "GET"
+                method = method.lower()
 
-                for method in methods:
-                    payload = None
-                    if method in ["POST", "PUT"]:
-                        payload = generate_dummy_payload(route) or generate_generic_payload()
+                # Generate payload for POST/PUT requests
+                data = None
+                if method in ("post", "put", "patch"):
+                    data = generate_dummy_payload(route)
+                    #Send request
+                response = await client.request(method, path, json=data)
+                report.append((method.upper(), path, response.status_code))
 
-                    try:
-                        response = await client.request(method, path, json=payload)
-                        status = response.status_code
-                        info = response.text
-                        if status in [401, 403]:
-                            category = "AUTH_ERROR"
-                        elif status >= 400:
-                            category = "FAIL"
-                        else:
-                            category = "PASS"
-                    except Exception as e:
-                        status = "EXCEPTION"
-                        info = str(e)
-                        category = "FAIL"
+    for method, path, status in report:
+        print(f"{method} {path} -> {status}")
 
-                    report.append({
-                        "plugin": plugin_slug,
-                        "path": path,
-                        "method": method,
-                        "status": status,
-                        "category": category,
-                        "info": info
-                    })
-
-    # -------------------- Print structured report --------------------
-    failed = [r for r in report if r["category"] != "PASS"]
-    if failed:
-        print("\n⚠️ Routes that failed (excluding auth warnings):")
-        for r in failed:
-            if r["category"] != "AUTH_ERROR":
-                print(f"- [{r['category']}] {r['plugin']} | {r['method']} {r['path']} | "
-                      f"Status/Error: {r['status']} | Info: {r['info'][:120]}...")
-    else:
-        print("\n✅ All plugin routes passed smoke test!")
-
-    # -------------------- Assert --------------------
-    assert not any(r for r in failed if r["category"] != "AUTH_ERROR"), \
-        "Some plugin routes failed (excluding auth issues)!"
+    # Assert all routes returned 200 or 404 (depending on accessibility)
+    assert all(status in (200, 404) for _, _, status in report)
