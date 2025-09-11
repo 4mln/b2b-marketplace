@@ -23,3 +23,4 @@ class Order(Base):
 
     seller = relationship("Seller", back_populates="orders")
     buyer = relationship("User", back_populates="buyer_orders")
+    payments = relationship("Payment", back_populates="order")   # expects Payment.order

@@ -1,5 +1,5 @@
 # plugins/pricing/models.py
-from sqlalchemy import Column, Integer, Float, ForeignKey, DateTime
+from sqlalchemy import Column, Integer,String , Float, ForeignKey, DateTime
 from datetime import datetime
 from app.db.base import Base
 

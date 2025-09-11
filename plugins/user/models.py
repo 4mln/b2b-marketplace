@@ -18,9 +18,13 @@ class User(Base):
     sellers = relationship("Seller", back_populates="user", cascade="all, delete-orphan")
     buyer = relationship("Buyer", back_populates="user", uselist=False)
     gamification = relationship("UserBadge", back_populates="user", cascade="all, delete-orphan")
-
     carts = relationship("Cart", back_populates="user", cascade="all, delete-orphan")
     points = relationship("UserPoints", back_populates="user", cascade="all, delete-orphan")
     buyer_orders = relationship("Order", back_populates="buyer", cascade="all, delete-orphan")
-
+    mobile_sessions = relationship("MobileAppSession", back_populates="user", cascade="all, delete-orphan")
+    analytics_events = relationship("AnalyticsEvent", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    notification_preferences = relationship("UserNotificationPreference",  back_populates="user")
+    notification_subscriptions = relationship("NotificationSubscription",back_populates="user",cascade="all, delete-orphan")
+    wallet = relationship("Wallet",back_populates="user", uselist=False, cascade="all, delete-orphan")
 

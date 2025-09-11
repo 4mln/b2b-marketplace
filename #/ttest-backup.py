@@ -57,6 +57,21 @@ def generate_dummy_payload(route: APIRoute) -> dict:
                 payload[name] = faker.word()
     return payload
 
+def generate_generic_payload():
+    """Fallback payload for known POST/PUT endpoints to avoid 422s."""
+    return {
+        "name": faker.word(),
+        "email": faker.email(),
+        "username": faker.user_name(),
+        "product_id": 1,
+        "quantity": 1,
+        "ad_space_id": 1,
+        "conversion_type": "click",
+        "task": faker.word(),
+        "prompt": faker.sentence(),
+        "cart_data": {"items": []},
+    }
+
 # --------------------------- Test ---------------------------
 
 @pytest.mark.asyncio
@@ -131,15 +146,13 @@ async def test_plugins_full_advanced_smoke():
         )
         session.add(ad_space)
         await session.commit()
-
+        
     # ---------- OVERRIDE SESSION FOR ROUTES ----------
     async def override_get_session() -> AsyncSession:
         async with async_session() as session:
             yield session
 
-    # Make sure the override matches exactly the get_session used in all plugins
     app.dependency_overrides[get_session] = override_get_session
-
     # Load plugins
     loader = PluginLoader()
     plugins = await loader.load_all(app, engine)
@@ -167,8 +180,8 @@ async def test_plugins_full_advanced_smoke():
             for route in plugin_routes:
                 path = fill_path_params(route.path)
 
-                # Determine HTTP method without mutating route.methods
-                method = next(iter(route.methods)) if route.methods else "GET"
+                # Determine HTTP method, default to GET
+                method = route.methods.pop() if route.methods else "GET"
                 method = method.lower()
 
                 # Generate payload for POST/PUT requests
@@ -177,15 +190,11 @@ async def test_plugins_full_advanced_smoke():
                     data = generate_dummy_payload(route)
 
                 # Send request
-                try:
-                    response = await client.request(method, path, json=data)
-                    report.append((method.upper(), path, response.status_code))
-                except Exception as e:
-                    report.append((method.upper(), path, f"ERROR: {e}"))
+                response = await client.request(method, path, json=data)
+                report.append((method.upper(), path, response.status_code))
 
-    # Print report
     for method, path, status in report:
         print(f"{method} {path} -> {status}")
 
-    # Assert all routes returned 200 or 404
-    assert all(isinstance(status, int) and status in (200, 404) for _, _, status in report)
+    # Assert all routes returned 200 or 404 (depending on accessibility)
+    assert all(status in (200, 404) for _, _, status in report)

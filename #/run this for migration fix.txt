@@ -1,0 +1,4 @@
+docker compose exec db psql -U postgres -d marketplace -c "ALTER TABLE sellers ADD COLUMN subscription VARCHAR NOT NULL DEFAULT 'basic';"
+docker compose exec db psql -U postgres -d marketplace -c "ALTER TABLE ads ADD CONSTRAINT ads_campaign_fk FOREIGN KEY (campaign_id) REFERENCES campaigns(id);"
+
+

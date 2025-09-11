@@ -60,6 +60,7 @@ class Ad(Base):
     id = Column(Integer, primary_key=True, index=True)
     seller_id = Column(Integer, ForeignKey("sellers.id"), nullable=False)
     title = Column(String(255), nullable=False)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"))
     description = Column(Text, nullable=True)
     ad_type = Column(Enum(AdType), nullable=False)
     status = Column(Enum(AdStatus), default=AdStatus.DRAFT)
