@@ -1,16 +1,16 @@
-# tests/full_ultimate_backend_test_progress.py
+# tests/full_ultimate_backend_test.py
 import pytest
 import pytest_asyncio
 import asyncio
 import inspect
 import re
-import time
 from typing import List, Dict, Any
 from fastapi.routing import APIRoute
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.inspection import inspect as sa_inspect
 from faker import Faker
 from enum import Enum
@@ -18,10 +18,9 @@ from enum import Enum
 from app.main import app as main_app
 from app.core.db import Base
 from app.core.plugins.loader import PluginLoader
-import plugins  # Ensure all plugin models are imported
+import plugins  # Ensure every plugin's models are imported in plugin __init__ or dynamically
 
 import warnings
-
 # -------------------- Suppress known deprecation warnings --------------------
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pytest_asyncio")
@@ -35,9 +34,9 @@ RED = "\033[91m"
 YELLOW = "\033[93m"
 RESET = "\033[0m"
 
-def log_pass(msg): print(f"{GREEN}✅ {msg}{RESET}", flush=True)
-def log_fail(msg): print(f"{RED}❌ {msg}{RESET}", flush=True)
-def log_skip(msg): print(f"{YELLOW}⚠️ {msg}{RESET}", flush=True)
+def log_pass(msg): print(f"{GREEN}✅ {msg}{RESET}")
+def log_fail(msg): print(f"{RED}❌ {msg}{RESET}")
+def log_skip(msg): print(f"{YELLOW}⚠️ {msg}{RESET}")
 
 plugin_results = {}
 def add_result(slug, status, detail=None):
@@ -95,10 +94,13 @@ async def auto_seed_fk(session: AsyncSession):
     models = get_all_models()
     fk_records = {}
     for model in models:
+        # Example: check for FKs
         cols = [col for col in sa_inspect(model).columns if col.foreign_keys]
         if cols:
+            print(f"Found FK in {model.__name__}: {[c.name for c in cols]}")
             for col in cols:
                 fk_records[col.table.name] = [1]  # dummy FK id
+            # Here you can insert dummy seed records if needed
     return fk_records
 
 # ---------------------- Dependency Sorting ----------------------
@@ -139,7 +141,7 @@ async def async_session(test_engine):
 async def loaded_plugins(test_engine):
     loader = PluginLoader()
     plugins_dict = {p.slug: p for p in await loader.load_all(main_app, test_engine)}
-    print(f"✅ Loaded {len(plugins_dict)} plugins", flush=True)
+    print(f"✅ Loaded {len(plugins_dict)} plugins")
     sorted_plugins = topological_sort_plugins(plugins_dict)
     return {p.slug: p for p in sorted_plugins}
 
@@ -148,28 +150,18 @@ async def async_client():
     async with AsyncClient(transport=ASGITransport(app=main_app), base_url="http://testserver") as client:
         yield client
 
-# ---------------------- Test with Progress ----------------------
+# ---------------------- Dependency-Aware CRUD & Endpoint Test ----------------------
 @pytest.mark.asyncio
 async def test_plugin_crud_and_endpoints(loaded_plugins, async_session, async_client):
     async with async_session() as session:
         fk_records = await auto_seed_fk(session)
         for slug, plugin in loaded_plugins.items():
-            start_time = time.time()
-            print(f"\n--- Testing plugin: {slug} ---", flush=True)
+            print(f"\n--- Testing plugin: {slug} ---")
             created_items = []
 
-            # Track progress
-            steps = ["create","list","get","update","delete","endpoints"]
-            total_steps = len(steps)
-            step_counter = 0
-
             # CRUD
-            for method_name in steps[:-1]:
+            for method_name in ["create","list","get","update","delete"]:
                 method = getattr(plugin, method_name, None)
-                step_counter += 1
-                percent = int(step_counter/total_steps*100)
-                print(f"[{slug}] Progress: {percent}% ...", flush=True)
-
                 if callable(method):
                     payload = generate_dummy_payload_recursive(method, fk_records)
                     try:
@@ -197,9 +189,6 @@ async def test_plugin_crud_and_endpoints(loaded_plugins, async_session, async_cl
                         add_result(slug,"fail",f"{method_name} failed: {e}")
 
             # Endpoints
-            step_counter += 1
-            percent = int(step_counter/total_steps*100)
-            print(f"[{slug}] Progress: {percent}% ... testing endpoints", flush=True)
             routes = [
                 r for r in main_app.routes  
                 if isinstance(r, APIRoute) and (r.path.startswith(f"/{slug}") or slug in r.path)
@@ -218,19 +207,14 @@ async def test_plugin_crud_and_endpoints(loaded_plugins, async_session, async_cl
                 except Exception as e:
                     add_result(slug,"fail",f"{method.upper()} {path} error: {e}")
 
-            end_time = time.time()
-            elapsed = end_time - start_time
-            minutes, seconds = divmod(int(elapsed), 60)
-            print(f"[{slug}] Progress: 100% ✅ Done | Took {minutes}m {seconds}s", flush=True)
-
 # ---------------------- Final Summary ----------------------
 def pytest_sessionfinish(session, exitstatus):
-    print("\n\n========== Plugins Test Summary ==========", flush=True)
+    print("\n\n========== Plugins Test Summary ==========")
     for slug, info in plugin_results.items():
-        print(f"\nPlugin: {slug}", flush=True)
-        print(f"PASS: {info['pass']}  FAIL: {info['fail']}  SKIP: {info['skip']}", flush=True)
+        print(f"\nPlugin: {slug}")
+        print(f"PASS: {info['pass']}  FAIL: {info['fail']}  SKIP: {info['skip']}")
         if info["details"]:
-            print("Details:", flush=True)
+            print("Details:")
             for detail in info["details"]:
-                print(f"  - {detail}", flush=True)
-    print("="*50, flush=True)
+                print(f"  - {detail}")
+    print("="*50)

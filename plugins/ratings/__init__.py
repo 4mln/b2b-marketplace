@@ -15,7 +15,7 @@ class Config(PluginConfig):
 class Plugin(PluginBase):
     slug = "ratings"
     version = "0.1.0"
-    dependencies: list[str] = ["users", "orders"]
+    dependencies: list[str] = ["user", "orders"]
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):

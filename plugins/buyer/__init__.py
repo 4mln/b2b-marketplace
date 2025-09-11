@@ -19,7 +19,7 @@ class Config(PluginConfig):
 # Plugin class
 # -----------------------------
 class Plugin(PluginBase):
-    slug = "buyers"
+    slug = "buyer"
     version = "0.1.0"
     dependencies: list[str] = []
     ConfigModel = Config

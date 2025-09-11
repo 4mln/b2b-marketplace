@@ -15,7 +15,7 @@ class Config(PluginConfig):
 class Plugin(PluginBase):
     slug = "subscriptions"
     version = "0.1.0"
-    dependencies: list[str] = ["users", "payments", "orders"]  # ensure FK target exists
+    dependencies: list[str] = ["user", "payments", "orders"]  # ensure FK target exists
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):

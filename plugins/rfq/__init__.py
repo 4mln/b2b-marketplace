@@ -15,7 +15,7 @@ class Config(PluginConfig):
 class Plugin(PluginBase):
     slug = "rfq"
     version = "0.1.0"
-    dependencies: list[str] = ["users", "products", "sellers"]
+    dependencies: list[str] = ["user", "products", "seller"]
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):

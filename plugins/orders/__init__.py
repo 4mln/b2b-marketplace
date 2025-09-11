@@ -16,7 +16,7 @@ class Config(PluginConfig):
 class Plugin(PluginBase):
     slug = "orders"
     version = "0.1.0"
-    dependencies: list[str] = ["users", "products", "buyers", "sellers"]  # core plugins
+    dependencies: list[str] = ["user", "products", "buyer", "seller"]  # core plugins
     ConfigModel = Config
 
     def __init__(self, config: Config | None = None):
